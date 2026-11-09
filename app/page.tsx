@@ -12,7 +12,8 @@ const credits=(c:number)=>new Intl.NumberFormat("en-KE",{minimumFractionDigits:2
 const time=(s:string)=>new Date(s).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"});
 
 export default function Home(){
- const [health,setHealth]=useState<any>(null),[user,setUser]=useState<SessionUser|null>(null);\n const refreshMs=Math.max(60000,Number(process.env.NEXT_PUBLIC_SPORTS_REFRESH_MS||900000));
+ const [health,setHealth]=useState<any>(null),[user,setUser]=useState<SessionUser|null>(null);
+ const refreshMs=Math.max(60000,Number(process.env.NEXT_PUBLIC_SPORTS_REFRESH_MS||900000));
  const [events,setEvents]=useState<Event[]>([]),[wallet,setWallet]=useState<WalletData|null>(null),[bets,setBets]=useState<any[]>([]);
  const [picks,setPicks]=useState<Pick[]>([]),[stake,setStake]=useState("10"),[filter,setFilter]=useState("All sports");
  const [loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
