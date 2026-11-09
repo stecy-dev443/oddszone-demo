@@ -138,3 +138,141 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .responsible-actions{display:grid;gap:8px;margin:14px 0}
 .responsible-actions button{min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--card2);color:var(--text);font-size:11px;font-weight:800;padding:10px;text-align:left}
 .mobile-slip-trigger{min-height:54px}
+
+
+/* SharpBets premium sportsbook visual refresh */
+.app-shell{
+  --bg:#080d17;--card:#101a2a;--card2:#162338;--line:#26364d;
+  --text:#f4f7fc;--muted:#8fa1ba;--primary:#4d8dff;--accent:#c5f36b;
+  --green:#8bd65c;--red:#ff6678;
+  background:
+    radial-gradient(ellipse at 48% -18%,rgba(40,91,155,.22),transparent 43%),
+    var(--bg);
+}
+.app-shell.light{
+  --bg:#f2f5f9;--card:#fff;--card2:#f5f7fa;--line:#e0e6ef;
+  --text:#111b2b;--muted:#68778d;--primary:#2869d8;--accent:#a4d94a;
+  --green:#238a4b;--red:#d74758;
+}
+.demo-strip{min-height:29px;background:#101c2d;color:#b9c9df;font-size:10px;letter-spacing:.055em}
+.light .demo-strip{background:#e8eef7;color:#30435d}
+.site-header{background:rgba(8,13,23,.92);border-bottom-color:#1d2a3e}
+.light .site-header{background:rgba(255,255,255,.94)}
+.header-main{max-width:1480px;min-height:72px;padding-inline:32px;gap:34px}
+.brand{font-size:25px;letter-spacing:-1.5px}
+.brand span{color:var(--accent)}
+.brand small{font-size:8px;letter-spacing:2.4px}
+.search-box{max-width:460px;height:43px;border-radius:8px;background:#111c2d;border-color:#26364d}
+.light .search-box{background:#f5f7fa}
+.header-actions{gap:9px}
+.balance-chip{background:#111c2d;border-color:#2a3a50;border-radius:8px}
+.light .balance-chip{background:#fff}
+.balance-chip svg{color:var(--accent)}
+.deposit-button,.builder-button,.primary-action{background:var(--accent);color:#18220b;border-radius:7px;font-weight:900}
+.icon-button,.profile-button{border-radius:8px}
+.sport-nav{max-width:1480px;padding-inline:32px;gap:3px}
+.sport-nav button{height:48px;font-size:12px;padding-inline:16px}
+.sport-nav button.active{color:var(--accent);border-color:var(--accent)}
+.page-content{max-width:1480px;padding:32px 32px 64px}
+.welcome-row{margin-bottom:25px}
+.eyebrow{color:var(--accent);font-size:9px;letter-spacing:.18em}
+.welcome-row h1{font-size:clamp(28px,3.2vw,38px);letter-spacing:-1.4px;font-weight:850}
+.welcome-row p{font-size:13px;color:#a5b4c8}
+.safe-chip{border-radius:6px;background:rgba(197,243,107,.09);color:#c5f36b}
+.featured-card{
+  min-height:224px;padding:28px 30px;border-radius:12px;
+  border:1px solid #29466b;
+  background:
+    radial-gradient(ellipse at 83% 0%,rgba(63,130,220,.30),transparent 42%),
+    linear-gradient(112deg,#142a45 0%,#0d192a 68%,#101c2d 100%);
+  box-shadow:0 18px 50px rgba(0,0,0,.24);gap:36px;margin-bottom:28px
+}
+.featured-kicker{color:var(--accent);font-size:9px;letter-spacing:.16em}
+.featured-copy h2{font-size:clamp(25px,3vw,37px);letter-spacing:-1.3px}
+.featured-copy p{font-size:12px;color:#aebed3}
+.featured-score>b{font-size:32px}
+.featured-stats{max-width:430px;margin-left:auto;width:100%}
+.stat-track{background:#34475f}.stat-track i{background:var(--accent)}
+.content-layout{grid-template-columns:minmax(0,1fr) 344px;gap:24px}
+.section-heading{margin-bottom:15px}
+.section-heading h2{font-size:19px;letter-spacing:-.45px}
+.section-heading p{font-size:11px}
+.filter-button{border-radius:7px;background:var(--card);border-color:var(--line)}
+.match-list{gap:13px}
+.match-card{
+  padding:17px 17px 15px;border-radius:10px;
+  background:linear-gradient(145deg,rgba(19,31,49,.98),rgba(14,24,39,.98));
+  border-color:#26374e;box-shadow:0 7px 20px rgba(0,0,0,.12);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease
+}
+.light .match-card{background:var(--card);border-color:var(--line)}
+.match-card:hover{transform:translateY(-2px);border-color:#496a95;box-shadow:0 12px 26px rgba(0,0,0,.18)}
+.match-meta{font-size:10px}
+.live-label{color:#ff7887}
+.teams-line{margin:19px 0 13px}
+.team-side{font-size:12px;gap:9px}
+.team-mark{width:32px;height:32px;border-radius:8px;background:#1c2d45;color:#b9d3ff}
+.light .team-mark{background:#edf2f9}
+.score-box strong{font-size:22px}
+.match-stats{font-size:10px;border-color:#26364b}
+.market-head{font-size:9px;letter-spacing:.035em;text-transform:uppercase}
+.odds-grid{gap:7px}
+.odd-button{
+  height:46px;border-radius:7px;background:#1a2a40;border-color:#2d405a;
+  padding:6px 9px;transition:border-color .15s ease,background .15s ease
+}
+.light .odd-button{background:#f1f5f9}
+.odd-button span{font-size:9px}
+.odd-button b{font-size:13px;color:#f5f8ff}
+.light .odd-button b{color:#15243a}
+.odd-button:hover:not(:disabled){border-color:var(--accent);background:rgba(197,243,107,.1)}
+.odd-button.chosen{border:1px solid var(--accent);background:rgba(197,243,107,.16);box-shadow:inset 0 0 0 1px rgba(197,243,107,.12)}
+.odd-button.chosen b{color:var(--accent)}
+.light .odd-button.chosen b{color:#456d13}
+.desktop-slip{top:142px}
+.slip-card{border-radius:11px;padding:19px;background:linear-gradient(150deg,#121f32,#0e1828);border-color:#2a3d57;box-shadow:0 14px 36px rgba(0,0,0,.2)}
+.light .slip-card{background:#fff}
+.slip-title h3{font-size:17px}
+.virtual-tag{background:rgba(197,243,107,.12);color:var(--accent);letter-spacing:.07em}
+.slip-empty{padding:28px 10px}
+.slip-empty svg{color:var(--accent)}
+.stake-input{border-radius:7px;background:#0b1422;border-color:#2b3d55}
+.light .stake-input{background:#f7f9fc}
+.quick-stakes button{border-radius:7px;background:#1a2a40;border-color:#2c405b}
+.light .quick-stakes button{background:#f2f5f9}
+.slip-summary.payout b{color:var(--accent)}
+.place-button{border-radius:7px;background:var(--accent);color:#17220a;font-size:12px;letter-spacing:.01em}
+.place-button:not(:disabled):hover,.deposit-button:hover,.builder-button:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.bets-page{max-width:960px}
+.history-card{border-radius:10px}
+.site-footer{background:#0b1422;border-color:#1d2c41;padding-top:34px}
+.light .site-footer{background:#fff}
+.site-footer>div b span{color:var(--accent)}
+.footer-bottom{border-color:#24364d}
+.mobile-slip-trigger{background:var(--accent);color:#18220b;border-radius:9px}
+.mobile-sheet{background:var(--bg)}
+.modal-card{border-radius:12px}
+.toast{border-radius:9px}
+@media(max-width:1050px){
+  .header-main,.sport-nav{padding-inline:20px}
+  .page-content{padding-inline:20px}
+  .content-layout{grid-template-columns:minmax(0,1fr) 310px}
+}
+@media(max-width:760px){
+  .header-main{padding:10px 13px;gap:8px}
+  .brand{font-size:21px}
+  .header-actions{gap:5px}
+  .balance-chip{font-size:10px}
+  .deposit-button{font-size:9px}
+  .sport-nav{padding-inline:8px}
+  .sport-nav button{padding-inline:11px}
+  .page-content{padding:22px 13px 92px}
+  .welcome-row h1{font-size:29px}
+  .featured-card{padding:19px;border-radius:10px;gap:12px}
+  .featured-copy h2{font-size:25px}
+  .featured-stats{max-width:none}
+  .match-card{padding:15px 13px}
+  .match-list{gap:10px}
+  .site-footer{padding:25px 15px 18px}
+}
+@media(hover:none){.match-card:hover{transform:none}}
