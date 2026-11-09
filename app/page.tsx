@@ -62,6 +62,7 @@ export default function Home() {
   const [theme,setTheme] = useState<"dark"|"light">("dark");
   const [message,setMessage] = useState("");
   const [limits,setLimits] = useState({daily:1000,session:60});
+  const [creditsAddedToday,setCreditsAddedToday] = useState(0);
   const [playPaused,setPlayPaused] = useState(false);
   const [selfExcluded,setSelfExcluded] = useState(false);
 
@@ -71,12 +72,19 @@ export default function Home() {
     setTheme(readStore<"dark"|"light">("sb-theme","dark"));
     setPlayPaused(readStore("sb-paused",false));
     setSelfExcluded(readStore("sb-self-excluded",false));
+    setCreditsAddedToday(readStore("sb-credits-added-today",0));
   }, []);
   useEffect(() => { localStorage.setItem("sb-balance",String(balance)); },[balance]);
   useEffect(() => { localStorage.setItem("sb-bets",JSON.stringify(bets)); },[bets]);
   useEffect(() => { localStorage.setItem("sb-theme",JSON.stringify(theme)); },[theme]);
   useEffect(() => { localStorage.setItem("sb-paused",JSON.stringify(playPaused)); },[playPaused]);
   useEffect(() => { localStorage.setItem("sb-self-excluded",JSON.stringify(selfExcluded)); },[selfExcluded]);
+  useEffect(() => { localStorage.setItem("sb-credits-added-today",JSON.stringify(creditsAddedToday)); },[creditsAddedToday]);
+  useEffect(() => {
+    if (!playPaused || selfExcluded) return;
+    const timer = window.setTimeout(() => setPlayPaused(false),24*60*60*1000);
+    return () => window.clearTimeout(timer);
+  },[playPaused,selfExcluded]);
   useEffect(() => {
     const timer = window.setInterval(() => setMessage("Session reminder: consider taking a short break."), limits.session*60*1000);
     return () => window.clearInterval(timer);
@@ -200,7 +208,7 @@ export default function Home() {
 
       {picks.length>0&&<button className="mobile-slip-trigger" onClick={()=>setSlipOpen(true)}><span>Bet slip · {picks.length}</span><b>{fmt(potential)} cr potential</b><ChevronDown size={17}/></button>}
       {slipOpen&&<div className="sheet-backdrop" onClick={()=>setSlipOpen(false)}><div className="mobile-sheet" onClick={e=>e.stopPropagation()}><div className="sheet-handle"/><button className="sheet-close" onClick={()=>setSlipOpen(false)}><X size={18}/></button><BetSlip picks={picks} matches={matches} stake={stake} setStake={setStake} balance={balance} combined={combined} potential={potential} remove={id=>setPicks(p=>p.filter(x=>x.matchId!==id))} placeBet={placeBet} playDisabled={playPaused||selfExcluded}/></div></div>}
-      {creditsOpen&&<Modal title="Top up your demo balance" close={()=>setCreditsOpen(false)}><p className="modal-copy">Add free virtual credits to keep exploring. This does not connect to a bank, card or payment provider.</p><div className="credit-options">{[1000,5000,10000].map(n=><button key={n} onClick={()=>{setBalance(v=>v+n);setCreditsOpen(false);setMessage(fmt(n)+" demo credits added.")}}>+{fmt(n)} credits</button>)}</div><div className="demo-note"><ShieldCheck size={15}/> Virtual credits have no cash value.</div></Modal>}
+      {creditsOpen&&<Modal title="Top up your demo balance" close={()=>setCreditsOpen(false)}><p className="modal-copy">Add free virtual credits to keep exploring. This does not connect to a bank, card or payment provider.</p><div className="credit-options">{[1000,5000,10000].map(n=><button key={n} disabled={creditsAddedToday+n>limits.daily} onClick={()=>{if(creditsAddedToday+n>limits.daily){setMessage("Your daily demo credit top-up limit has been reached.");return;}setCreditsAddedToday(v=>v+n);setBalance(v=>v+n);setCreditsOpen(false);setMessage(fmt(n)+" demo credits added.")}}>+{fmt(n)} credits</button>)}</div><div className="demo-note"><ShieldCheck size={15}/> Virtual credits have no cash value. Daily top-up limit: {fmt(limits.daily)} credits · Added today: {fmt(creditsAddedToday)}.</div></Modal>}
       {responsibleOpen&&<Modal title="Responsible play" close={()=>setResponsibleOpen(false)}><p className="modal-copy">Play for fun, stay in control. These local demo settings help you practise healthy limits.</p><label className="setting-row"><span>Daily virtual credit limit</span><select value={limits.daily} onChange={e=>setLimits(v=>({...v,daily:+e.target.value}))}><option value="250">250 credits</option><option value="500">500 credits</option><option value="1000">1,000 credits</option><option value="2500">2,500 credits</option></select></label><label className="setting-row"><span>Session reminder</span><select value={limits.session} onChange={e=>setLimits(v=>({...v,session:+e.target.value}))}><option value="30">Every 30 minutes</option><option value="60">Every 60 minutes</option><option value="90">Every 90 minutes</option></select></label><div className="responsible-actions"><button onClick={()=>{setPlayPaused(true);setResponsibleOpen(false);setMessage("A 24-hour cool-off has been enabled for this demo browser.");}}>Start 24-hour cool-off</button><button onClick={()=>{setSelfExcluded(true);setResponsibleOpen(false);setMessage("Self-exclusion enabled. Demo betting is now disabled in this browser.");}}>Self-exclude from this demo</button></div><div className="responsible-links"><b>Need support?</b><p>If gambling stops being fun, consider taking a break and contacting a local support service. This prototype does not provide a monitored helpline.</p><a href="https://www.gamblingtherapy.org/" target="_blank" rel="noreferrer">Gambling Therapy support <ChevronRight size={13}/></a></div><button className="primary-action" onClick={()=>setResponsibleOpen(false)}>Save demo settings</button></Modal>}
       {message&&<div className="toast"><Check size={16}/>{message}<button onClick={()=>setMessage("")}><X size={14}/></button></div>}
     </div>
