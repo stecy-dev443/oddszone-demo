@@ -45,7 +45,7 @@ npm start
 
 ## Stack
 
-- Next.js 14 App Router (React)
+- Next.js 15 App Router (React 19)
 - TypeScript
 - Tailwind CSS 3
 - lucide-react icons
