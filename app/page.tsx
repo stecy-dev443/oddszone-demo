@@ -12,7 +12,7 @@ const credits=(c:number)=>new Intl.NumberFormat("en-KE",{minimumFractionDigits:2
 const time=(s:string)=>new Date(s).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"});
 
 export default function Home(){
- const [health,setHealth]=useState<any>(null),[user,setUser]=useState<SessionUser|null>(null);
+ const [health,setHealth]=useState<any>(null),[user,setUser]=useState<SessionUser|null>(null);\n const refreshMs=Math.max(60000,Number(process.env.NEXT_PUBLIC_SPORTS_REFRESH_MS||900000));
  const [events,setEvents]=useState<Event[]>([]),[wallet,setWallet]=useState<WalletData|null>(null),[bets,setBets]=useState<any[]>([]);
  const [picks,setPicks]=useState<Pick[]>([]),[stake,setStake]=useState("10"),[filter,setFilter]=useState("All sports");
  const [loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
@@ -26,7 +26,7 @@ export default function Home(){
  const loadEvents=useCallback(async()=>{setRefreshing(true);try{const r=await fetch("/api/sports",{cache:"no-store"});const data=await r.json();if(!r.ok)throw new Error(data.error||"Sports feed unavailable.");setEvents(data.events||[]);setNotice("");}catch(e){setNotice(e instanceof Error?e.message:"Sports feed unavailable.");}finally{setRefreshing(false);setLoading(false);}},[]);
  useEffect(()=>{void loadHealth();},[loadHealth]);
  useEffect(()=>{if(health?.capabilities?.authentication)void loadAccount();},[health,loadAccount]);
- useEffect(()=>{if(health?.capabilities?.sportsData&&health?.capabilities?.database){void loadEvents();const id=window.setInterval(()=>void loadEvents(),45000);return()=>window.clearInterval(id);}else setLoading(false);},[health,loadEvents]);
+ useEffect(()=>{if(health?.capabilities?.sportsData&&health?.capabilities?.database){void loadEvents();const id=window.setInterval(()=>void loadEvents(),refreshMs);return()=>window.clearInterval(id);}else setLoading(false);},[health,loadEvents,refreshMs]);
  const sports=useMemo(()=>["All sports",...Array.from(new Set(events.map(e=>e.sportTitle))).sort()], [events]);
  const visible=events.filter(e=>(filter==="All sports"||e.sportTitle===filter));
  const totalOdds=picks.reduce((v,p)=>v*p.odds,1),stakeCents=Math.round((Number(stake)||0)*100);
@@ -54,7 +54,7 @@ export default function Home(){
    </section>
    {health&&health.missing?.length>0&&<div className="mb-6 rounded-xl border border-amber-700/60 bg-amber-950/40 p-4 text-sm text-amber-100"><b>Platform setup incomplete.</b><p className="mt-1 text-amber-200/80">Connect Neon Postgres and configure the server-side sports API key before accounts, wallet and live markets can run. Missing: {(health.missing||[]).join(", ")||"service configuration"}.</p></div>}
    {notice&&<div role="status" className="mb-5 flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm text-slate-200"><span>{notice}</span><button onClick={()=>setNotice("")}>×</button></div>}
-   <div id="events" className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-bold tracking-[.2em] text-lime-300">MARKETS CENTRE</div><h2 className="mt-1 text-2xl font-black">Fixtures & odds</h2><p className="mt-1 text-xs text-slate-400">Server-fed prices · refreshed every 45 seconds</p></div><button onClick={loadEvents} disabled={refreshing} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300"><RefreshCw className={refreshing?"mr-2 inline h-3 w-3 animate-spin":"mr-2 inline h-3 w-3"}/>Refresh</button></div>
+   <div id="events" className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-bold tracking-[.2em] text-lime-300">MARKETS CENTRE</div><h2 className="mt-1 text-2xl font-black">Fixtures & odds</h2><p className="mt-1 text-xs text-slate-400">Server-fed prices · refreshes every {Math.round(refreshMs/60000)} min</p></div><button onClick={loadEvents} disabled={refreshing} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300"><RefreshCw className={refreshing?"mr-2 inline h-3 w-3 animate-spin":"mr-2 inline h-3 w-3"}/>Refresh</button></div>
    <div className="mb-5 flex gap-2 overflow-x-auto pb-2">{sports.map(s=><button key={s} onClick={()=>setFilter(s)} className={filter===s?"whitespace-nowrap rounded-full bg-lime-300 px-4 py-2 text-xs font-black text-slate-950":"whitespace-nowrap rounded-full border border-slate-700 px-4 py-2 text-xs text-slate-300"}>{s}</button>)}</div>
    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_350px]">
     <section className="space-y-3">{loading?<div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center text-sm text-slate-400">Loading sports feed…</div>:visible.length?visible.map(e=><article key={e.id} className="rounded-xl border border-slate-800 bg-[#101a2a] p-4 shadow-lg">

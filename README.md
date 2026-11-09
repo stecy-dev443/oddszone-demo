@@ -41,7 +41,7 @@ npm run dev
 - GET/PUT /api/responsible-play — account-level limits and exclusions
 - /api/payments — intentionally disabled (HTTP 410)
 
-## Current setup status
+The starter sports-data quota is limited; tune `SPORTS_CACHE_SECONDS` and `NEXT_PUBLIC_SPORTS_REFRESH_MS` to match the provider plan. The 15-minute default is designed around a paid 20,000-credit tier, not the very small free quota.\n\n## Current setup status
 The code and preview deployment are in place. The Vercel project still needs Neon Postgres and the sports-provider API key before account storage, betting and live markets can operate. Password-reset emails need a verified sender through Resend. Configure `ADMIN_EMAIL` before creating the first administrator.
 
 ## Safety boundary

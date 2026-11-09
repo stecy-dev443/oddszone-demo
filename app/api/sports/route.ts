@@ -11,15 +11,15 @@ export async function GET(){
  const key=process.env.ODDS_API_KEY;if(!key)return NextResponse.json({provider:"not_configured",events:[],error:"ODDS_API_KEY is not configured."},{status:503});
  try{
   const url=new URL("https://api.the-odds-api.com/v4/sports/upcoming/odds");
-  url.searchParams.set("apiKey",key);url.searchParams.set("regions",process.env.ODDS_API_REGIONS||"eu,uk");url.searchParams.set("markets","h2h");url.searchParams.set("oddsFormat","decimal");
-  const response=await fetch(url,{next:{revalidate:30}});if(!response.ok)throw new Error("Sports provider returned HTTP "+response.status);
+  url.searchParams.set("apiKey",key);url.searchParams.set("regions",process.env.ODDS_API_REGIONS||"eu");url.searchParams.set("markets","h2h");url.searchParams.set("oddsFormat","decimal");
+  const cacheSeconds=Math.max(60,Math.min(21600,Number(process.env.SPORTS_CACHE_SECONDS||900)));\n  const response=await fetch(url,{next:{revalidate:cacheSeconds}});if(!response.ok)throw new Error("Sports provider returned HTTP "+response.status);
   const events=(await response.json()) as Event[],db=getDb(),scoreMap=new Map<string,ScoreEvent>();
   const sportKeys=[...new Set(events.map(e=>e.sport_key))].slice(0,3);
   await Promise.all(sportKeys.map(async sport=>{
    try{
     const scoreUrl=new URL("https://api.the-odds-api.com/v4/sports/"+encodeURIComponent(sport)+"/scores");
     scoreUrl.searchParams.set("apiKey",key);scoreUrl.searchParams.set("daysFrom","1");
-    const scoreResponse=await fetch(scoreUrl,{next:{revalidate:30}});
+    const scoreResponse=await fetch(scoreUrl,{next:{revalidate:cacheSeconds}});
     if(scoreResponse.ok){const scores=(await scoreResponse.json()) as ScoreEvent[];for(const score of scores)scoreMap.set(score.id,score);}
    }catch{/* Score coverage varies by sport; odds remain available. */}
   }));
