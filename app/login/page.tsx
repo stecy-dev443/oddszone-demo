@@ -15,6 +15,6 @@ export default function LoginPage(){
  <label className="block text-sm text-slate-300">Password<input required minLength={10} type="password" autoComplete={mode==="signup"?"new-password":"current-password"} value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-white"/></label>
  {message&&<p role="alert" className="rounded-lg bg-rose-950 p-3 text-sm text-rose-200">{message}</p>}
  <button disabled={busy} className="w-full rounded-lg bg-lime-300 px-4 py-3 font-black text-slate-950 disabled:opacity-50">{busy?"Please wait…":mode==="signup"?"Create account":"Sign in"}</button></form>
- <button onClick={()=>{setMode(mode==="signup"?"signin":"signup");setMessage("");}} className="mt-5 text-sm text-slate-300 underline">{mode==="signup"?"Already registered? Sign in":"New to SharpBets? Create an account"}</button>
+ <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><button onClick={()=>{setMode(mode==="signup"?"signin":"signup");setMessage("");}} className="text-sm text-slate-300 underline">{mode==="signup"?"Already registered? Sign in":"New to SharpBets? Create an account"}</button>{mode==="signin"&&<a href="/forgot-password" className="text-sm text-lime-300 underline">Forgot password?</a>}</div>
  </section></main>;
 }
