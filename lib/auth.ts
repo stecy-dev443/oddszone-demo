@@ -7,7 +7,7 @@ export function getAuth() {
  const db=getDb();
  return betterAuth({
   appName:"SharpBets",
-  baseURL:process.env.BETTER_AUTH_URL||process.env.NEXT_PUBLIC_APP_URL||"http://localhost:3000",
+  baseURL:process.env.BETTER_AUTH_URL||(process.env.VERCEL_URL?"https://"+process.env.VERCEL_URL:process.env.NEXT_PUBLIC_APP_URL||"http://localhost:3000"),
   secret:process.env.BETTER_AUTH_SECRET,
   database:drizzleAdapter(db,{provider:"pg",schema:authSchema}),
   emailAndPassword:{enabled:true,requireEmailVerification:false,minPasswordLength:10,maxPasswordLength:128,revokeSessionsOnPasswordReset:true},
