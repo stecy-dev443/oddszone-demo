@@ -1,56 +1,44 @@
-# SharpBets — Free Play Sports Arena
+# SharpBets — virtual-credit sportsbook
 
-A mobile-first React + Tailwind sports betting **UI prototype** built with Next.js and mock data. SharpBets is strictly free-to-play: it has no payment processing, deposits, withdrawals, cash-value balances, or real-money betting.
+SharpBets is a free-to-play sportsbook-style platform. Real-money wagering, deposits, withdrawals, payment processing and cash-value balances are intentionally disabled.
 
-## Features
+## Stack
+- Next.js 15 App Router + React 19
+- Better Auth email/password sessions
+- Neon Postgres + Drizzle ORM
+- Server-side virtual wallet ledger and transactional bet placement
+- The Odds API provider adapter (requires an API key)
+- Admin-only fixture management
 
-- Responsive sports dashboard with Live Now, Football, Basketball, Tennis, Baseball, Esports and Upcoming filters
-- Twelve mock fixtures with simulated scores/clocks and odds that update every 3.5 seconds
-- Green/red odds movement feedback and live match badges
-- Featured match with a statistics strip and a Bet Builder shortcut
-- Desktop right-rail bet slip and mobile slide-up bet slip
-- Virtual balance, quick stake chips, potential payout and local demo bet history
-- My Bets views for Open, Settled and Cash Out
-- Local demo credit top-up (no payment provider)
-- Dark/light theme toggle
-- Responsible-play settings, session reminders and support resource link
-- Local browser storage only; no shared accounts or server-side wallet
+## Required Vercel environment
+- DATABASE_URL — Neon pooled connection string
+- BETTER_AUTH_SECRET — random secret of at least 32 bytes
+- BETTER_AUTH_URL and NEXT_PUBLIC_APP_URL — deployed app URL
+- ADMIN_EMAIL — initial admin account email
+- ODDS_API_KEY — The Odds API key, server-side only
 
-## Run locally
-
-Requirements: Node.js 18.17+.
-
+## Setup
+Connect Neon Postgres from Vercel Marketplace, then add the variables above. Locally, copy .env.example to .env.local and run:
 ```bash
 npm install
+npm run db:generate
+npm run db:push
 npm run dev
 ```
 
-Open http://localhost:3000.
+## API
+- GET /api/health — readiness checks
+- /api/auth/* — Better Auth registration and login
+- GET /api/sports — provider-backed fixtures and h2h odds
+- GET /api/wallet — authenticated wallet and ledger
+- POST /api/wallet — claim daily free virtual credits
+- GET /api/bets — account bet history
+- POST /api/bets — transactional virtual bet placement
+- GET/PATCH /api/admin/fixtures — admin fixture management
+- /api/payments — intentionally disabled (HTTP 410)
 
-## Production build
+## Current setup status
+At the time this backend foundation was added, the Vercel project had no connected database integration and no environment variables. The health endpoint reports missing setup rather than silently using fake data. Password-reset email delivery requires a mail provider before that feature can be enabled.
 
-```bash
-npm run build
-npm start
-```
-
-## Important prototype boundaries
-
-- Match data, odds, scores and game clocks are mock/simulated. They are not a live sports data feed.
-- Virtual credits have no monetary value and cannot be purchased, withdrawn, transferred or redeemed.
-- The “Add demo credits” action only increases a local virtual balance.
-- Demo bets are stored in the visitor's browser and are not synchronized across devices or users.
-- Profile and responsible-play settings are local UI preferences, not a verified account or regulated responsible-gambling system.
-- The support link points to Gambling Therapy; this demo does not operate a helpline.
-
-## Stack
-
-- Next.js 15 App Router (React 19)
-- TypeScript
-- Tailwind CSS 3
-- lucide-react icons
-- Mock fixture data and browser localStorage
-
-## License
-
-This repository contains a UI prototype. Add your own chosen open-source or proprietary licence before redistributing.
+## Safety boundary
+Virtual credits have no monetary value and cannot be purchased, withdrawn, transferred or redeemed. This is not a real-money bookmaker.
