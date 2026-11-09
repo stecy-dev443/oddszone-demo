@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Bell, Check, ChevronDown, ChevronRight,
-  CircleHelp, Clock3, Football, Gift, Menu, Moon, Search, ShieldCheck, SlidersHorizontal,
+  Activity, ArrowDownRight, ArrowUpRight, Check, ChevronDown, ChevronRight,
+  Gift, Menu, Moon, Search, ShieldCheck, SlidersHorizontal,
   Sun, Trophy, UserRound, Wallet, X, Zap
 } from "lucide-react";
 
@@ -66,7 +66,7 @@ export default function Home() {
   useEffect(() => {
     setBalance(readStore("sb-balance",10000));
     setBets(readStore("sb-bets",[]));
-    setTheme(readStore("sb-theme","dark"));
+    setTheme(readStore<"dark"|"light">("sb-theme","dark"));
   }, []);
   useEffect(() => { localStorage.setItem("sb-balance",String(balance)); },[balance]);
   useEffect(() => { localStorage.setItem("sb-bets",JSON.stringify(bets)); },[bets]);
