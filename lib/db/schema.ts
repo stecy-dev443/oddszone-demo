@@ -58,7 +58,7 @@ export const bets = pgTable("bets", {
 export const betLegs = pgTable("bet_legs", {
  id:text("id").primaryKey(), betId:text("bet_id").notNull().references(()=>bets.id,{onDelete:"cascade"}),
  selectionId:text("selection_id").notNull().references(()=>selections.id), fixtureName:text("fixture_name").notNull(),
- marketName:text("market_name").notNull(), selectionName:text("selection_name").notNull(),
+ marketName:text("market_name").notNull(), selectionName:text("selection_name").notNull(), result:text("result").notNull().default("pending"),
  oddsAtPlacement:numeric("odds_at_placement",{precision:10,scale:3}).notNull()
 });
 export const responsibleLimits = pgTable("responsible_limits", {
