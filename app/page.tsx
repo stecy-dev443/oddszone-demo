@@ -62,15 +62,25 @@ export default function Home() {
   const [theme,setTheme] = useState<"dark"|"light">("dark");
   const [message,setMessage] = useState("");
   const [limits,setLimits] = useState({daily:1000,session:60});
+  const [playPaused,setPlayPaused] = useState(false);
+  const [selfExcluded,setSelfExcluded] = useState(false);
 
   useEffect(() => {
     setBalance(readStore("sb-balance",10000));
     setBets(readStore("sb-bets",[]));
     setTheme(readStore<"dark"|"light">("sb-theme","dark"));
+    setPlayPaused(readStore("sb-paused",false));
+    setSelfExcluded(readStore("sb-self-excluded",false));
   }, []);
   useEffect(() => { localStorage.setItem("sb-balance",String(balance)); },[balance]);
   useEffect(() => { localStorage.setItem("sb-bets",JSON.stringify(bets)); },[bets]);
   useEffect(() => { localStorage.setItem("sb-theme",JSON.stringify(theme)); },[theme]);
+  useEffect(() => { localStorage.setItem("sb-paused",JSON.stringify(playPaused)); },[playPaused]);
+  useEffect(() => { localStorage.setItem("sb-self-excluded",JSON.stringify(selfExcluded)); },[selfExcluded]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setMessage("Session reminder: consider taking a short break."), limits.session*60*1000);
+    return () => window.clearInterval(timer);
+  },[limits.session]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -178,7 +188,7 @@ export default function Home() {
             <section className="matches-column"><div className="section-heading"><div><h2>{activeSport==="Live Now"?"Happening now":activeSport==="Upcoming"?"Coming up":activeSport+" matches"}</h2><p>{filtered.length} events · odds refresh every few seconds</p></div><button className="filter-button"><SlidersHorizontal size={15}/> Filters</button></div>
               <div className="match-list">{filtered.map(m=><MatchCard key={m.id} match={m}/>)}{!filtered.length&&<div className="empty-state">No matches found. Try another sport or search.</div>}</div>
             </section>
-            <aside className="desktop-slip"><BetSlip picks={picks} matches={matches} stake={stake} setStake={setStake} balance={balance} combined={combined} potential={potential} remove={id=>setPicks(p=>p.filter(x=>x.matchId!==id))} placeBet={placeBet}/></aside>
+            <aside className="desktop-slip"><BetSlip picks={picks} matches={matches} stake={stake} setStake={setStake} balance={balance} combined={combined} potential={potential} remove={id=>setPicks(p=>p.filter(x=>x.matchId!==id))} placeBet={placeBet} playDisabled={playPaused||selfExcluded}/></aside>
           </div>}
         </> : <section className="bets-page"><div className="bets-tabs">{(["Open","Settled","Cash Out"] as const).map(t=><button key={t} className={betTab===t?"selected":""} onClick={()=>setBetTab(t)}>{t}</button>)}</div>
           {betTab==="Open"&&bets.some(b=>b.status==="Open")&&<button className="settle-button" onClick={settleDemo}>Simulate match results</button>}
@@ -191,19 +201,19 @@ export default function Home() {
       {picks.length>0&&<button className="mobile-slip-trigger" onClick={()=>setSlipOpen(true)}><span>Bet slip · {picks.length}</span><b>{fmt(potential)} cr potential</b><ChevronDown size={17}/></button>}
       {slipOpen&&<div className="sheet-backdrop" onClick={()=>setSlipOpen(false)}><div className="mobile-sheet" onClick={e=>e.stopPropagation()}><div className="sheet-handle"/><button className="sheet-close" onClick={()=>setSlipOpen(false)}><X size={18}/></button><BetSlip picks={picks} matches={matches} stake={stake} setStake={setStake} balance={balance} combined={combined} potential={potential} remove={id=>setPicks(p=>p.filter(x=>x.matchId!==id))} placeBet={placeBet}/></div></div>}
       {creditsOpen&&<Modal title="Top up your demo balance" close={()=>setCreditsOpen(false)}><p className="modal-copy">Add free virtual credits to keep exploring. This does not connect to a bank, card or payment provider.</p><div className="credit-options">{[1000,5000,10000].map(n=><button key={n} onClick={()=>{setBalance(v=>v+n);setCreditsOpen(false);setMessage(fmt(n)+" demo credits added.")}}>+{fmt(n)} credits</button>)}</div><div className="demo-note"><ShieldCheck size={15}/> Virtual credits have no cash value.</div></Modal>}
-      {responsibleOpen&&<Modal title="Responsible play" close={()=>setResponsibleOpen(false)}><p className="modal-copy">Play for fun, stay in control. These local demo settings help you practise healthy limits.</p><label className="setting-row"><span>Daily virtual credit limit</span><select value={limits.daily} onChange={e=>setLimits(v=>({...v,daily:+e.target.value}))}><option value="250">250 credits</option><option value="500">500 credits</option><option value="1000">1,000 credits</option><option value="2500">2,500 credits</option></select></label><label className="setting-row"><span>Session reminder</span><select value={limits.session} onChange={e=>setLimits(v=>({...v,session:+e.target.value}))}><option value="30">Every 30 minutes</option><option value="60">Every 60 minutes</option><option value="90">Every 90 minutes</option></select></label><div className="responsible-links"><b>Need support?</b><p>If gambling stops being fun, consider taking a break and contacting a local support service. This prototype does not provide a monitored helpline.</p><a href="https://www.gamblingtherapy.org/" target="_blank" rel="noreferrer">Gambling Therapy support <ChevronRight size={13}/></a></div><button className="primary-action" onClick={()=>setResponsibleOpen(false)}>Save demo settings</button></Modal>}
+      {responsibleOpen&&<Modal title="Responsible play" close={()=>setResponsibleOpen(false)}><p className="modal-copy">Play for fun, stay in control. These local demo settings help you practise healthy limits.</p><label className="setting-row"><span>Daily virtual credit limit</span><select value={limits.daily} onChange={e=>setLimits(v=>({...v,daily:+e.target.value}))}><option value="250">250 credits</option><option value="500">500 credits</option><option value="1000">1,000 credits</option><option value="2500">2,500 credits</option></select></label><label className="setting-row"><span>Session reminder</span><select value={limits.session} onChange={e=>setLimits(v=>({...v,session:+e.target.value}))}><option value="30">Every 30 minutes</option><option value="60">Every 60 minutes</option><option value="90">Every 90 minutes</option></select></label><div className="responsible-actions"><button onClick={()=>{setPlayPaused(true);setResponsibleOpen(false);setMessage("A 24-hour cool-off has been enabled for this demo browser.");}}>Start 24-hour cool-off</button><button onClick={()=>{setSelfExcluded(true);setResponsibleOpen(false);setMessage("Self-exclusion enabled. Demo betting is now disabled in this browser.");}}>Self-exclude from this demo</button></div><div className="responsible-links"><b>Need support?</b><p>If gambling stops being fun, consider taking a break and contacting a local support service. This prototype does not provide a monitored helpline.</p><a href="https://www.gamblingtherapy.org/" target="_blank" rel="noreferrer">Gambling Therapy support <ChevronRight size={13}/></a></div><button className="primary-action" onClick={()=>setResponsibleOpen(false)}>Save demo settings</button></Modal>}
       {message&&<div className="toast"><Check size={16}/>{message}<button onClick={()=>setMessage("")}><X size={14}/></button></div>}
     </div>
   );
 }
 
-function BetSlip({picks,matches,stake,setStake,balance,combined,potential,remove,placeBet}:{picks:Pick[];matches:Match[];stake:string;setStake:(s:string)=>void;balance:number;combined:number;potential:number;remove:(id:number)=>void;placeBet:()=>void}) {
+function BetSlip({picks,matches,stake,setStake,balance,combined,potential,remove,placeBet,playDisabled}:{picks:Pick[];matches:Match[];stake:string;setStake:(s:string)=>void;balance:number;combined:number;potential:number;remove:(id:number)=>void;placeBet:()=>void;playDisabled:boolean}) {
   return <div className="slip-card"><div className="slip-title"><h3>Bet slip <span>{picks.length}</span></h3><span className="virtual-tag">VIRTUAL</span></div>
     {!picks.length?<div className="slip-empty"><Trophy size={27}/><b>Your slip is empty</b><p>Choose an outcome to add it to your bet slip.</p></div>:<div className="slip-picks">{picks.map(p=>{const m=matches.find(x=>x.id===p.matchId);return <div className="slip-pick" key={p.matchId}><div><b>{m?.home} vs {m?.away}</b><small>{outcomeNames[p.outcome]} · {p.odds.toFixed(2)}</small></div><button onClick={()=>remove(p.matchId)} aria-label="Remove selection"><X size={15}/></button></div>})}</div>}
     <label className="input-label">Stake (virtual credits)</label><input className="stake-input" type="number" min="1" value={stake} onChange={e=>setStake(e.target.value)} />
     <div className="quick-stakes">{[5,10,25].map(n=><button key={n} onClick={()=>setStake(String(n))}>{n} cr</button>)}</div>
     <div className="slip-summary"><span>Combined odds</span><b>{picks.length?combined.toFixed(2):"—"}</b></div><div className="slip-summary payout"><span>Potential payout</span><b>{picks.length?fmt(potential)+" cr":"—"}</b></div><div className="balance-note">Available balance <b>{fmt(balance)} cr</b></div>
-    <button className="place-button" disabled={!picks.length||Number(stake)<=0||Number(stake)>balance} onClick={placeBet}>Place free-play bet</button><p className="slip-disclaimer">No money is deposited, wagered or paid out.</p>
+    <button className="place-button" disabled={playDisabled||!picks.length||Number(stake)<=0||Number(stake)>balance} onClick={placeBet}>Place free-play bet</button><p className="slip-disclaimer">No money is deposited, wagered or paid out.</p>
   </div>;
 }
 
