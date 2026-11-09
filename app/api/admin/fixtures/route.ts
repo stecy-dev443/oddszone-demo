@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { auditLogs,fixtures } from "@/lib/db/schema";
+import { auditLogs,fixtures,markets,selections } from "@/lib/db/schema";
 export const dynamic="force-dynamic";
 async function admin(request:Request){const s=await getAuth().api.getSession({headers:request.headers});return s?.user.role==="admin"?s:null;}
 export async function GET(request:Request){
  const s=await admin(request);if(!s)return NextResponse.json({error:"Admin access required."},{status:403});
- return NextResponse.json({fixtures:await getDb().select().from(fixtures).orderBy(fixtures.startTime)});
+ const db=getDb(),all=await db.select().from(fixtures).orderBy(fixtures.startTime);
+ const result=await Promise.all(all.map(async f=>{
+  const ms=await db.select().from(markets).where(eq(markets.fixtureId,f.id));
+  const nested=await Promise.all(ms.map(async m=>({...m,selections:await db.select().from(selections).where(eq(selections.marketId,m.id))})));
+  return {...f,markets:nested};
+ }));
+ return NextResponse.json({fixtures:result});
 }
 export async function PATCH(request:Request){
  const s=await admin(request);if(!s)return NextResponse.json({error:"Admin access required."},{status:403});
