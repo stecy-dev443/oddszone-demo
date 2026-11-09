@@ -1,0 +1,3 @@
+"use client";
+import {useEffect,useState} from "react";
+export default function Wallet(){const [balance,setBalance]=useState(1000);useEffect(()=>setBalance(Number(localStorage.getItem("oz-balance")||1000)),[]);function reset(){localStorage.setItem("oz-balance","1000");localStorage.removeItem("oz-bets");setBalance(1000)}return <main><div className="eyebrow">VIRTUAL CREDITS ONLY</div><h1 className="section-title">Demo wallet</h1><section className="card" style={{maxWidth:560}}><p className="muted">Available play-money balance</p><div className="balance">${balance.toFixed(2)}</div><p className="muted">Starting balance: $1,000. No deposits or withdrawals are available.</p><button onClick={reset}>RESET DEMO WALLET</button></section></main>}

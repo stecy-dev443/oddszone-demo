@@ -1,0 +1,3 @@
+"use client";
+import {useState} from "react";
+export default function Login(){const [name,setName]=useState("");const [saved,setSaved]=useState("");return <main><div className="eyebrow">LOCAL DEMO PROFILE</div><h1 className="section-title">Welcome to ODDSZONE</h1><section className="card" style={{maxWidth:480}}><p className="muted">This is not account authentication. Your display name stays in this browser session.</p><label>Display name</label><input className="field" value={name} onChange={e=>setName(e.target.value)} placeholder="Enter a nickname"/><button onClick={()=>{localStorage.setItem("oz-name",name||"Guest Player");setSaved("Demo profile saved locally.")}}>SAVE DEMO PROFILE</button>{saved&&<p className="tag">{saved}</p>}</section></main>}
