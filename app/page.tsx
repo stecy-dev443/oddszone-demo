@@ -63,8 +63,9 @@ export default function Home(){
   </header>
   <main className="mx-auto max-w-7xl overflow-hidden px-4 py-8">
    <div className="mb-4 flex items-center justify-between text-[10px] font-bold tracking-widest text-slate-500"><span>SHARPBETS ARENA</span><span>{["HOME","SPORTS","CASINO","PLAYBOOK"][activePage]} · {activePage+1}/4</span></div>
-   <div className="flex items-start transition-transform duration-500 ease-in-out motion-reduce:transition-none" style={{transform:`translateX(-${activePage*25}%)`}}>
-    <section aria-label="Home" className="w-full shrink-0 pr-1">
+   <div className="relative [perspective:1400px]">
+   <div className="flex items-start transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)] motion-reduce:transition-none [transform-style:preserve-3d]" style={{transform:`translateX(-${activePage*25}%)`}}>
+    <section aria-label="Home" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(0===activePage?0:0<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
    <section className="sharp-hero mb-8 grid gap-6 rounded-2xl border border-blue-900/70 bg-[radial-gradient(ellipse_at_85%_0%,rgba(59,130,246,.25),transparent_45%),linear-gradient(110deg,#142a45,#0d192a)] p-6 md:grid-cols-[1.2fr_.8fr] md:p-9">
     <div><div className="mb-3 text-[10px] font-bold tracking-[.25em] text-lime-300">YOUR SEAT IN THE GAME · ALL SPORTS WELCOME</div><h1 className="max-w-2xl text-3xl font-black leading-tight tracking-tight md:text-5xl">Good games. Big moments.<br/><span className="bg-gradient-to-r from-lime-300 via-cyan-300 to-fuchsia-300 bg-clip-text text-transparent">Your kind of sports arena.</span></h1><p className="mt-4 max-w-xl text-sm leading-6 text-slate-300">Pull up a seat. Catch the fixtures, follow the action, learn the game and build a virtual bet slip just for fun. No real money involved.</p><div className="mt-6 flex flex-wrap gap-3"><button onClick={()=>setActivePage(1)} className="rounded-lg bg-lime-300 px-5 py-3 text-sm font-black text-slate-950">Let’s explore <ChevronRight className="ml-1 inline h-4 w-4"/></button>{!user&&<Link href="/login" className="rounded-lg border border-slate-500 px-5 py-3 text-sm font-bold">Create free account</Link>}</div></div>
     <div className="grid grid-cols-2 gap-3 self-end"><div className="rounded-xl border border-white/10 bg-black/20 p-4"><Activity className="mb-3 text-lime-300"/><div className="text-2xl font-black">{events.length}</div><div className="text-xs text-slate-400">Games on the board</div></div><div className="rounded-xl border border-white/10 bg-black/20 p-4"><Trophy className="mb-3 text-lime-300"/><div className="text-2xl font-black">{bets.filter(b=>b.status==="open").length}</div><div className="text-xs text-slate-400">Your open slips</div></div></div>
@@ -72,11 +73,9 @@ export default function Home(){
    {health&&health.missing?.length>0&&<div className="mb-6 rounded-xl border border-amber-700/60 bg-amber-950/40 p-4 text-sm text-amber-100"><b>Platform setup incomplete.</b><p className="mt-1 text-amber-200/80">Complete the remaining integrations below. The sports API key is stored securely; the database connection is still required before accounts, wallets and markets can run. Missing: {(health.missing||[]).join(", ")||"service configuration"}.</p></div>}
    {notice&&<div role="status" className="mb-5 flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm text-slate-200"><span>{notice}</span><button onClick={()=>setNotice("")}>×</button></div>}
 
-   {health&&health.missing?.length>0&&<div className="mb-6 rounded-xl border border-amber-700/60 bg-amber-950/40 p-4 text-sm text-amber-100"><b>Platform setup incomplete.</b><p className="mt-1 text-amber-200/80">Complete the remaining integrations below. The sports API key is stored securely; the database connection is still required before accounts, wallets and markets can run. Missing: {(health.missing||[]).join(", ")||"service configuration"}.</p></div>}
-   {notice&&<div role="status" className="mb-5 flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm text-slate-200"><span>{notice}</span><button onClick={()=>setNotice("")}>×</button></div>}
 
     </section>
-    <section aria-label="Sports" className="w-full shrink-0 pr-1">
+    <section aria-label="Sports" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(1===activePage?0:1<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
    <div id="events" className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="flex items-center gap-2 text-[10px] font-bold tracking-[.2em] text-fuchsia-300"><Star size={12}/> GAME DAY CENTRAL</div><h2 className="mt-1 text-2xl font-black">Who’s playing?</h2><p className="mt-1 text-xs text-slate-400">Pick a sport, explore the matchups and follow the action · updates every {Math.round(refreshMs/60000)} min</p></div><button onClick={loadEvents} disabled={refreshing} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300"><RefreshCw className={refreshing?"mr-2 inline h-3 w-3 animate-spin":"mr-2 inline h-3 w-3"}/>Refresh</button></div>
    <div className="mb-5 flex gap-2 overflow-x-auto pb-2">{sports.map(s=><button key={s} onClick={()=>setFilter(s)} className={filter===s?"whitespace-nowrap rounded-full bg-lime-300 px-4 py-2 text-xs font-black text-slate-950":"whitespace-nowrap rounded-full border border-slate-700 px-4 py-2 text-xs text-slate-300"}>{s}</button>)}</div>
    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_350px]">
@@ -99,7 +98,7 @@ export default function Home(){
    </div>
 
     </section>
-    <section aria-label="Casino" className="w-full shrink-0 pr-1">
+    <section aria-label="Casino" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(2===activePage?0:2<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
    <section id="casino" className="mb-9 overflow-hidden rounded-2xl border border-violet-400/20 bg-[radial-gradient(ellipse_at_10%_0%,rgba(236,72,153,.18),transparent_38%),radial-gradient(ellipse_at_90%_100%,rgba(99,102,241,.2),transparent_42%),linear-gradient(120deg,#1b1235,#11172c_55%,#101a2a)] p-5 md:p-7">
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><div className="flex items-center gap-2 text-[10px] font-black tracking-[.22em] text-fuchsia-300"><Crown size={15}/> SHARPBETS CASINO LOUNGE</div><h2 className="mt-2 text-2xl font-black md:text-3xl">Change the game. Find your next favourite.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">A colourful games-room preview, made for the fun of the game.</p></div><span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-300/10 px-3 py-2 text-[10px] font-black tracking-wider text-fuchsia-200">CASINO ZONE</span></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -112,7 +111,7 @@ export default function Home(){
    </section>
 
     </section>
-    <section aria-label="Playbook" className="w-full shrink-0 pr-1">
+    <section aria-label="Playbook" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(3===activePage?0:3<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
    <section id="playbook" className="mb-9 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(115deg,rgba(14,165,233,.13),rgba(168,85,247,.13),rgba(234,179,8,.10))] p-5 md:p-7">
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-2 text-[10px] font-black tracking-[.22em] text-cyan-300"><Sparkles size={14}/> THE SHARPBETS PLAYBOOK</div><h2 className="mt-2 text-2xl font-black md:text-3xl">A little game knowledge goes a long way.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">New to the numbers or already know your way around the pitch? We’re all learning something. Start with a quick tip, then enjoy the action.</p></div><span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-400/10 px-3 py-2 text-[10px] font-bold text-fuchsia-200">LEARN · PLAY · ENJOY</span></div>
     <div className="grid gap-3 md:grid-cols-3">
@@ -123,6 +122,7 @@ export default function Home(){
    </section>
 
     </section>
+   </div>
    </div>
    <div className="mt-7 flex justify-center gap-2">
     {["Home","Sports","Casino","Playbook"].map((label,index)=><button key={label} aria-label={`Go to ${label}`} onClick={()=>setActivePage(index)} className={activePage===index?"h-2.5 w-8 rounded-full bg-lime-300 transition-all":"h-2.5 w-2.5 rounded-full bg-slate-600 transition-all hover:bg-slate-400"}/>)}
