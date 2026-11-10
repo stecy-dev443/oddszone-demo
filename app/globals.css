@@ -354,3 +354,43 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
   .sharp-match,.sharp-odd{transition:none}
   .sharp-match:hover,.sharp-odd:hover{transform:none}
 }
+
+
+/* SharpBets mobile-first panel motion and layout containment */
+.sharp-panel-viewport{
+  width:100%;
+  min-width:0;
+  overflow:hidden;
+  isolation:isolate;
+  contain:layout paint;
+  perspective:1600px;
+  -webkit-mask-image:-webkit-radial-gradient(white,black);
+}
+.sharp-panel-track{
+  width:100%;
+  transform-style:preserve-3d;
+  will-change:transform;
+}
+.sharp-panel-track>section{
+  box-sizing:border-box;
+  min-width:100%;
+  max-width:100%;
+  flex:0 0 100%;
+  transform-style:preserve-3d;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+.sharp-header .mx-auto:first-child{min-width:0}
+.sharp-header .mx-auto:first-child>a{flex-shrink:0;white-space:nowrap}
+.sharp-header nav{scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+.sharp-header nav>button,.sharp-header nav>a{scroll-snap-align:start;min-height:44px;white-space:nowrap}
+.sharp-shell button,.sharp-shell a{-webkit-tap-highlight-color:transparent}
+@media(max-width:640px){
+  .sharp-panel-viewport{perspective:1200px}
+  .sharp-panel-track>section{padding-right:0!important}
+  .sharp-header .mx-auto:first-child{gap:8px}
+  .sharp-header nav{padding-bottom:10px;padding-top:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .sharp-panel-track,.sharp-panel-track>section{will-change:auto;transform-style:flat}
+}
