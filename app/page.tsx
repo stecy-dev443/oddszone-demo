@@ -1,230 +1,133 @@
 "use client";
+import { useCallback,useEffect,useMemo,useState } from "react";
+import Link from "next/link";
+import { Activity, BookOpen, ChevronDown, ChevronRight, CircleUserRound, Flame, HeartHandshake, LogOut, RefreshCw, ShieldCheck, Sparkles, Star, Trophy, Dices, Crown, Spade, Gift, Radio, Zap } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  Activity, ArrowDownRight, ArrowUpRight, Check, ChevronDown, ChevronRight,
-  Gift, Menu, Moon, Search, ShieldCheck, SlidersHorizontal,
-  Sun, Trophy, UserRound, Wallet, X, Zap
-} from "lucide-react";
+type Choice={id:string;name:string;odds:string};
+type Event={id:string;sportTitle:string;league:string;homeTeam:string;awayTeam:string;startTime:string;status:string;homeScore:number|null;awayScore:number|null;market:{selections:Choice[]}};
+type SessionUser={id:string;name:string;email:string;role:string};
+type WalletData={balanceCents:number;lastDemoCreditAt:string|null};
+type Pick={selectionId:string;name:string;odds:number;fixtureId:string;fixtureName:string};
+const credits=(c:number)=>new Intl.NumberFormat("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2}).format(c/100);
+const time=(s:string)=>new Date(s).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"});
 
-type Sport = "Football" | "Basketball" | "Tennis" | "Baseball" | "Esports";
-type Match = {
-  id: number; sport: Sport; league: string; home: string; away: string;
-  score: [number, number]; clock: string; status: "LIVE" | "UPCOMING";
-  odds: [number, number, number]; moves: [string, string, string];
-  stats: string;
-};
-type Pick = { matchId: number; outcome: number; odds: number };
-type Bet = {
-  id: number; picks: Pick[]; stake: number; payout: number;
-  status: "Open" | "Won" | "Lost" | "Cashed out"; date: string;
-};
-
-const seedMatches: Match[] = [
-  {id:1,sport:"Football",league:"Premier League · England",home:"Arsenal",away:"Chelsea",score:[2,1],clock:"67′",status:"LIVE",odds:[1.72,3.55,4.65],moves:["","",""],stats:"Possession 58% · Shots 13–8"},
-  {id:2,sport:"Football",league:"La Liga · Spain",home:"Real Madrid",away:"Barcelona",score:[1,1],clock:"52′",status:"LIVE",odds:[2.05,2.95,3.35],moves:["","",""],stats:"Possession 49% · Shots 7–9"},
-  {id:3,sport:"Basketball",league:"NBA · USA",home:"Boston Celtics",away:"New York Knicks",score:[78,72],clock:"Q3 · 04:32",status:"LIVE",odds:[1.48,0,2.62],moves:["","",""],stats:"Rebounds 31–27 · Assists 18–16"},
-  {id:4,sport:"Tennis",league:"ATP · Indoor",home:"Alex de Minaur",away:"Taylor Fritz",score:[1,0],clock:"Set 2 · 3–2",status:"LIVE",odds:[1.66,0,2.18],moves:["","",""],stats:"Aces 5–7 · Break points 2–1"},
-  {id:5,sport:"Football",league:"Serie A · Italy",home:"Inter Milan",away:"Napoli",score:[0,0],clock:"28′",status:"LIVE",odds:[2.12,2.78,3.7],moves:["","",""],stats:"Possession 54% · Shots 4–3"},
-  {id:6,sport:"Baseball",league:"MLB · USA",home:"LA Dodgers",away:"San Diego Padres",score:[3,2],clock:"Top 6th",status:"LIVE",odds:[1.62,0,2.3],moves:["","",""],stats:"Hits 7–5 · Errors 0–1"},
-  {id:7,sport:"Esports",league:"Valorant · Masters",home:"Sentinels",away:"Fnatic",score:[8,6],clock:"Map 2",status:"LIVE",odds:[1.82,0,1.94],moves:["","",""],stats:"Maps 1–0 · Rounds 8–6"},
-  {id:8,sport:"Football",league:"Bundesliga · Germany",home:"Bayern Munich",away:"Borussia Dortmund",score:[1,0],clock:"39′",status:"LIVE",odds:[1.58,3.9,5.1],moves:["","",""],stats:"Possession 62% · Shots 9–3"},
-  {id:9,sport:"Basketball",league:"EuroLeague",home:"Real Madrid Baloncesto",away:"Olympiacos",score:[42,46],clock:"Q2 · 01:18",status:"LIVE",odds:[2.35,0,1.55],moves:["","",""],stats:"Rebounds 18–22 · Fouls 8–7"},
-  {id:10,sport:"Tennis",league:"WTA · Clay",home:"Iga Swiatek",away:"Coco Gauff",score:[0,0],clock:"Set 1 · 2–2",status:"LIVE",odds:[1.52,0,2.48],moves:["","",""],stats:"Aces 1–2 · Winners 8–6"},
-  {id:11,sport:"Football",league:"Ligue 1 · France",home:"PSG",away:"Marseille",score:[0,0],clock:"Tomorrow · 20:00",status:"UPCOMING",odds:[1.64,3.8,4.7],moves:["","",""],stats:"Head-to-head 4–1–1"},
-  {id:12,sport:"Baseball",league:"MLB · USA",home:"New York Yankees",away:"Boston Red Sox",score:[0,0],clock:"Tomorrow · 19:10",status:"UPCOMING",odds:[1.88,0,1.92],moves:["","",""],stats:"Season series 3–2"}
-];
-
-const sports = ["Live Now","Football","Basketball","Tennis","Baseball","Esports","Upcoming"] as const;
-const outcomeNames = ["Home","Draw","Away"];
-
-function readStore<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try { const value = localStorage.getItem(key); return value ? JSON.parse(value) as T : fallback; }
-  catch { return fallback; }
-}
-const fmt = (n: number) => n.toLocaleString("en-US", {maximumFractionDigits: 2});
-
-export default function Home() {
-  const [matches,setMatches] = useState(seedMatches);
-  const [activeSport,setActiveSport] = useState<string>("Live Now");
-  const [query,setQuery] = useState("");
-  const [balance,setBalance] = useState(10000);
-  const [picks,setPicks] = useState<Pick[]>([]);
-  const [stake,setStake] = useState("10");
-  const [bets,setBets] = useState<Bet[]>([]);
-  const [section,setSection] = useState<"sports"|"bets">("sports");
-  const [betTab,setBetTab] = useState<"Open"|"Settled"|"Cash Out">("Open");
-  const [slipOpen,setSlipOpen] = useState(false);
-  const [profileOpen,setProfileOpen] = useState(false);
-  const [creditsOpen,setCreditsOpen] = useState(false);
-  const [responsibleOpen,setResponsibleOpen] = useState(false);
-  const [theme,setTheme] = useState<"dark"|"light">("dark");
-  const [message,setMessage] = useState("");
-  const [limits,setLimits] = useState({daily:1000,session:60});
-  const [creditsAddedToday,setCreditsAddedToday] = useState(0);
-  const [playPaused,setPlayPaused] = useState(false);
-  const [selfExcluded,setSelfExcluded] = useState(false);
-
-  useEffect(() => {
-    setBalance(readStore("sb-balance",10000));
-    setBets(readStore("sb-bets",[]));
-    setTheme(readStore<"dark"|"light">("sb-theme","dark"));
-    setPlayPaused(readStore("sb-paused",false));
-    setSelfExcluded(readStore("sb-self-excluded",false));
-    setCreditsAddedToday(readStore("sb-credits-added-today",0));
-  }, []);
-  useEffect(() => { localStorage.setItem("sb-balance",String(balance)); },[balance]);
-  useEffect(() => { localStorage.setItem("sb-bets",JSON.stringify(bets)); },[bets]);
-  useEffect(() => { localStorage.setItem("sb-theme",JSON.stringify(theme)); },[theme]);
-  useEffect(() => { localStorage.setItem("sb-paused",JSON.stringify(playPaused)); },[playPaused]);
-  useEffect(() => { localStorage.setItem("sb-self-excluded",JSON.stringify(selfExcluded)); },[selfExcluded]);
-  useEffect(() => { localStorage.setItem("sb-credits-added-today",JSON.stringify(creditsAddedToday)); },[creditsAddedToday]);
-  useEffect(() => {
-    if (!playPaused || selfExcluded) return;
-    const timer = window.setTimeout(() => setPlayPaused(false),24*60*60*1000);
-    return () => window.clearTimeout(timer);
-  },[playPaused,selfExcluded]);
-  useEffect(() => {
-    const timer = window.setInterval(() => setMessage("Session reminder: consider taking a short break."), limits.session*60*1000);
-    return () => window.clearInterval(timer);
-  },[limits.session]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setMatches(old => old.map(m => {
-        const next = m.odds.map(o => o===0 ? 0 : Math.max(1.08, +(o + (Math.random()-.5)*.12).toFixed(2))) as [number,number,number];
-        const moves = next.map((o,i) => o===0 ? "" : o>m.odds[i] ? "up" : o<m.odds[i] ? "down" : "") as [string,string,string];
-        return {...m,odds:next,moves};
-      }));
-    },3500);
-    return () => window.clearInterval(timer);
-  },[]);
-
-  const filtered = useMemo(() => matches.filter(m => {
-    const category = activeSport==="Live Now" ? m.status==="LIVE" : activeSport==="Upcoming" ? m.status==="UPCOMING" : m.sport===activeSport;
-    const text = (m.home+" "+m.away+" "+m.league).toLowerCase();
-    return category && text.includes(query.toLowerCase());
-  }),[matches,activeSport,query]);
-  const featured = matches[0];
-  const combined = picks.reduce((v,p)=>v*p.odds,1);
-  const numericStake = Math.max(0,Number(stake)||0);
-  const potential = numericStake*combined;
-  const selectedIds = new Set(picks.map(p=>p.matchId));
-  const visibleBets = bets.filter(b => betTab==="Open" ? b.status==="Open" : betTab==="Settled" ? b.status!=="Open" : b.status==="Open");
-
-  function togglePick(match: Match, outcome: number) {
-    if (match.odds[outcome]===0) return;
-    setPicks(old => {
-      const exists = old.find(p=>p.matchId===match.id);
-      if (exists?.outcome===outcome) return old.filter(p=>p.matchId!==match.id);
-      return [...old.filter(p=>p.matchId!==match.id),{matchId:match.id,outcome,odds:match.odds[outcome]}];
-    });
-    setSlipOpen(true);
-  }
-  function placeBet() {
-    if (!picks.length || numericStake<=0 || numericStake>balance) { setMessage("Choose an outcome and enter a valid stake within your virtual balance."); return; }
-    const bet: Bet = {id:Date.now(),picks:[...picks],stake:numericStake,payout:potential,status:"Open",date:new Date().toLocaleString()};
-    setBets(old=>[bet,...old]); setBalance(v=>v-numericStake); setPicks([]); setStake("10"); setMessage("Your virtual bet has been placed."); setSlipOpen(false);
-  }
-  function settleDemo() {
-    const next = bets.map(b => b.status!=="Open" ? b : {...b,status:(Math.random()>.5?"Won":"Lost") as Bet["status"]});
-    next.forEach((b,i)=>{if(b.status==="Won"&&bets[i]?.status==="Open") setBalance(v=>v+b.payout);});
-    setBets(next); setMessage("Demo results have been simulated.");
-  }
-  function cashOut(bet: Bet) {
-    const amount = Math.max(1,Math.round(bet.stake*0.82*100)/100);
-    setBets(old=>old.map(b=>b.id===bet.id?{...b,status:"Cashed out"}:b));
-    setBalance(v=>v+amount); setMessage("Virtual cash out credited: "+fmt(amount)+" credits.");
-  }
-
-  const MatchCard = ({match}: {match:Match}) => (
-    <article className="match-card">
-      <div className="match-meta"><span>{match.sport} <span className="meta-dot">·</span> {match.league}</span>
-        {match.status==="LIVE" ? <span className="live-label"><i/> LIVE <b>{match.clock}</b></span> : <span className="upcoming-label">{match.clock}</span>}
-      </div>
-      <div className="teams-line">
-        <div className="team-side"><span className="team-mark">{match.home.slice(0,2).toUpperCase()}</span><b>{match.home}</b></div>
-        <div className="score-box"><strong>{match.score[0]} <small>:</small> {match.score[1]}</strong></div>
-        <div className="team-side away"><b>{match.away}</b><span className="team-mark">{match.away.slice(0,2).toUpperCase()}</span></div>
-      </div>
-      <div className="match-stats"><Activity size={13}/>{match.stats}</div>
-      <div className="market-head"><span>Match result</span><span>Decimal odds</span></div>
-      <div className="odds-grid">{match.odds.map((odd,i)=>(
-        <button key={i} disabled={odd===0} onClick={()=>togglePick(match,i)}
-          className={`odd-button ${selectedIds.has(match.id)&&picks.find(p=>p.matchId===match.id)?.outcome===i?"chosen":""} ${match.moves[i]}`}>
-          <span>{outcomeNames[i]}</span><b>{odd===0?"—":odd.toFixed(2)}</b>
-          {match.moves[i]==="up"&&<ArrowUpRight size={12}/>}
-          {match.moves[i]==="down"&&<ArrowDownRight size={12}/>}
-        </button>
-      ))}</div>
-    </article>
-  );
-
-  return (
-    <div className={`app-shell ${theme}`}>
-      <div className="demo-strip"><ShieldCheck size={13}/> FREE PLAY DEMO <span>·</span> Virtual credits only. No deposits, withdrawals or real-money wagers.</div>
-      <header className="site-header">
-        <div className="header-main">
-          <button className="mobile-menu icon-button" aria-label="Menu"><Menu size={20}/></button>
-          <button className="brand" onClick={()=>{setSection("sports");setActiveSport("Live Now")}}>SHARP<span>BETS</span><small>PLAY ARENA</small></button>
-          <label className="search-box"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search teams, leagues..." aria-label="Search teams and leagues"/><kbd>⌘ K</kbd></label>
-          <div className="header-actions">
-            <div className="balance-chip"><Wallet size={16}/><span>{fmt(balance)}</span><small>credits</small></div>
-            <button className="deposit-button" onClick={()=>setCreditsOpen(true)}><Gift size={16}/> Add demo credits</button>
-            <button className="icon-button" aria-label="Toggle theme" onClick={()=>setTheme(t=>t==="dark"?"light":"dark")}>{theme==="dark"?<Sun size={18}/>:<Moon size={18}/>}</button>
-            <div className="profile-wrap"><button className="profile-button" onClick={()=>setProfileOpen(v=>!v)}><span className="avatar">S</span><ChevronDown size={14}/></button>
-              {profileOpen&&<div className="profile-menu"><b>Demo player</b><span className="muted-small">Local browser profile</span><button onClick={()=>{setResponsibleOpen(true);setProfileOpen(false)}}><ShieldCheck size={15}/> Responsible play</button><button onClick={()=>setProfileOpen(false)}><UserRound size={15}/> Close profile</button></div>}
-            </div>
-          </div>
-        </div>
-        <nav className="sport-nav">
-          {sports.map(s=><button key={s} onClick={()=>{setSection("sports");setActiveSport(s)}} className={activeSport===s&&section==="sports"?"active":""}>{s==="Live Now"&&<span className="nav-live-dot"/>}{s}</button>)}
-          <button className={section==="bets"?"active":""} onClick={()=>setSection("bets")}>My Bets <span className="bet-count">{bets.filter(b=>b.status==="Open").length}</span></button>
-        </nav>
-      </header>
-
-      <main className="page-content">
-        <div className="welcome-row"><div><div className="eyebrow">YOUR SPORTS, YOUR PACE</div><h1>{section==="bets"?"My Bets":activeSport==="Live Now"?"Live sports":"Explore "+activeSport}</h1><p>Follow the action and enjoy the game with virtual credits.</p></div><div className="safe-chip"><ShieldCheck size={16}/> Play for fun, stay in control</div></div>
-
-        {section==="sports" ? <>
-          <section className="featured-card">
-            <div className="featured-copy"><span className="featured-kicker"><Zap size={13}/> FEATURED LIVE MATCH</span><h2>{featured.home}<span> vs </span>{featured.away}</h2><p>{featured.league} · {featured.clock}</p><div className="featured-score"><b>{featured.score[0]} : {featured.score[1]}</b><span className="live-label"><i/> LIVE NOW</span></div><button className="builder-button" onClick={()=>{togglePick(featured,0);setSlipOpen(true)}}>Build a bet <ChevronRight size={16}/></button></div>
-            <div className="featured-stats"><div><span>Possession</span><b>58% <small>42%</small></b><div className="stat-track"><i/></div></div><div><span>Shots on target</span><b>6 <small>3</small></b><div className="stat-track"><i/></div></div><div><span>Attacks</span><b>72 <small>54</small></b><div className="stat-track"><i/></div></div></div>
-          </section>
-          {section==="sports"&&<div className="content-layout">
-            <section className="matches-column"><div className="section-heading"><div><h2>{activeSport==="Live Now"?"Happening now":activeSport==="Upcoming"?"Coming up":activeSport+" matches"}</h2><p>{filtered.length} events · odds refresh every few seconds</p></div><button className="filter-button"><SlidersHorizontal size={15}/> Filters</button></div>
-              <div className="match-list">{filtered.map(m=><MatchCard key={m.id} match={m}/>)}{!filtered.length&&<div className="empty-state">No matches found. Try another sport or search.</div>}</div>
-            </section>
-            <aside className="desktop-slip"><BetSlip picks={picks} matches={matches} stake={stake} setStake={setStake} balance={balance} combined={combined} potential={potential} remove={id=>setPicks(p=>p.filter(x=>x.matchId!==id))} placeBet={placeBet} playDisabled={playPaused||selfExcluded}/></aside>
-          </div>}
-        </> : <section className="bets-page"><div className="bets-tabs">{(["Open","Settled","Cash Out"] as const).map(t=><button key={t} className={betTab===t?"selected":""} onClick={()=>setBetTab(t)}>{t}</button>)}</div>
-          {betTab==="Open"&&bets.some(b=>b.status==="Open")&&<button className="settle-button" onClick={settleDemo}>Simulate match results</button>}
-          <div className="bet-history">{visibleBets.map(b=><article className="history-card" key={b.id}><div className="history-top"><b>Bet #{String(b.id).slice(-6)}</b><span className={`status-pill ${b.status.toLowerCase().replace(" ","-")}`}>{b.status}</span></div><p>{b.picks.map(p=>{const m=matches.find(x=>x.id===p.matchId);return m?m.home+" vs "+m.away:"Match";}).join(" · ")}</p><div className="history-bottom"><span>Stake <b>{fmt(b.stake)} cr</b></span><span>Potential payout <b>{fmt(b.payout)} cr</b></span><span>{b.date}</span></div>{betTab==="Cash Out"&&b.status==="Open"&&<button className="cashout-button" onClick={()=>cashOut(b)}>Cash out {fmt(b.stake*.82)} cr</button>}</article>)}{!visibleBets.length&&<div className="empty-state">Nothing here yet. Your demo bets will appear here.</div>}</div>
-        </section>}
-      </main>
-
-      <footer className="site-footer"><div className="footer-main"><div><b>SHARP<span>BETS</span></b><p>A free-to-play sports interface prototype.</p></div><div className="footer-responsible"><ShieldCheck size={19}/><div><b>Play for fun, stay in control.</b><p>Set limits, take breaks and keep play enjoyable. This demo has no real-money functionality.</p><button onClick={()=>setResponsibleOpen(true)}>Responsible play settings <ChevronRight size={14}/></button></div></div></div><div className="footer-bottom">© 2026 SharpBets Demo <span>·</span> Mock fixtures and simulated odds <span>·</span> No cash value</div></footer>
-
-      {picks.length>0&&<button className="mobile-slip-trigger" onClick={()=>setSlipOpen(true)}><span>Bet slip · {picks.length}</span><b>{fmt(potential)} cr potential</b><ChevronDown size={17}/></button>}
-      {slipOpen&&<div className="sheet-backdrop" onClick={()=>setSlipOpen(false)}><div className="mobile-sheet" onClick={e=>e.stopPropagation()}><div className="sheet-handle"/><button className="sheet-close" onClick={()=>setSlipOpen(false)}><X size={18}/></button><BetSlip picks={picks} matches={matches} stake={stake} setStake={setStake} balance={balance} combined={combined} potential={potential} remove={id=>setPicks(p=>p.filter(x=>x.matchId!==id))} placeBet={placeBet} playDisabled={playPaused||selfExcluded}/></div></div>}
-      {creditsOpen&&<Modal title="Top up your demo balance" close={()=>setCreditsOpen(false)}><p className="modal-copy">Add free virtual credits to keep exploring. This does not connect to a bank, card or payment provider.</p><div className="credit-options">{[1000,5000,10000].map(n=><button key={n} disabled={creditsAddedToday+n>limits.daily} onClick={()=>{if(creditsAddedToday+n>limits.daily){setMessage("Your daily demo credit top-up limit has been reached.");return;}setCreditsAddedToday(v=>v+n);setBalance(v=>v+n);setCreditsOpen(false);setMessage(fmt(n)+" demo credits added.")}}>+{fmt(n)} credits</button>)}</div><div className="demo-note"><ShieldCheck size={15}/> Virtual credits have no cash value. Daily top-up limit: {fmt(limits.daily)} credits · Added today: {fmt(creditsAddedToday)}.</div></Modal>}
-      {responsibleOpen&&<Modal title="Responsible play" close={()=>setResponsibleOpen(false)}><p className="modal-copy">Play for fun, stay in control. These local demo settings help you practise healthy limits.</p><label className="setting-row"><span>Daily virtual credit limit</span><select value={limits.daily} onChange={e=>setLimits(v=>({...v,daily:+e.target.value}))}><option value="250">250 credits</option><option value="500">500 credits</option><option value="1000">1,000 credits</option><option value="2500">2,500 credits</option></select></label><label className="setting-row"><span>Session reminder</span><select value={limits.session} onChange={e=>setLimits(v=>({...v,session:+e.target.value}))}><option value="30">Every 30 minutes</option><option value="60">Every 60 minutes</option><option value="90">Every 90 minutes</option></select></label><div className="responsible-actions"><button onClick={()=>{setPlayPaused(true);setResponsibleOpen(false);setMessage("A 24-hour cool-off has been enabled for this demo browser.");}}>Start 24-hour cool-off</button><button onClick={()=>{setSelfExcluded(true);setResponsibleOpen(false);setMessage("Self-exclusion enabled. Demo betting is now disabled in this browser.");}}>Self-exclude from this demo</button></div><div className="responsible-links"><b>Need support?</b><p>If gambling stops being fun, consider taking a break and contacting a local support service. This prototype does not provide a monitored helpline.</p><a href="https://www.gamblingtherapy.org/" target="_blank" rel="noreferrer">Gambling Therapy support <ChevronRight size={13}/></a></div><button className="primary-action" onClick={()=>setResponsibleOpen(false)}>Save demo settings</button></Modal>}
-      {message&&<div className="toast"><Check size={16}/>{message}<button onClick={()=>setMessage("")}><X size={14}/></button></div>}
+export default function Home(){
+ const [health,setHealth]=useState<any>(null),[user,setUser]=useState<SessionUser|null>(null);
+ const refreshMs=Math.max(60000,Number(process.env.NEXT_PUBLIC_SPORTS_REFRESH_MS||900000));
+ const [events,setEvents]=useState<Event[]>([]),[wallet,setWallet]=useState<WalletData|null>(null),[bets,setBets]=useState<any[]>([]);
+ const [picks,setPicks]=useState<Pick[]>([]),[stake,setStake]=useState("10"),[filter,setFilter]=useState("All sports");
+ const [loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
+ const [menu,setMenu]=useState(false);
+ const [activePage,setActivePage]=useState(0);
+ const loadHealth=useCallback(async()=>{try{const r=await fetch("/api/health",{cache:"no-store"});setHealth(await r.json());}catch{setHealth({status:"offline"});}},[]);
+ const loadAccount=useCallback(async()=>{try{
+  const s=await fetch("/api/auth/get-session",{cache:"no-store",credentials:"include"});const data=s.ok?await s.json():null;setUser(data?.user||null);
+  if(data?.user){const [w,b]=await Promise.all([fetch("/api/wallet",{cache:"no-store"}),fetch("/api/bets",{cache:"no-store"})]);if(w.ok){const v=await w.json();setWallet(v.wallet);}if(b.ok){const v=await b.json();setBets(v.bets||[]);}}
+  else{setWallet(null);setBets([]);}
+ }catch{setUser(null);}},[]);
+ const loadEvents=useCallback(async()=>{setRefreshing(true);try{const r=await fetch("/api/sports",{cache:"no-store"});const data=await r.json();if(!r.ok)throw new Error(data.error||"Sports feed unavailable.");setEvents(data.events||[]);setNotice("");}catch(e){console.error("SharpBets sports feed request failed:",e);setNotice("We couldn’t load the sports feed just now. Please try again shortly.");}finally{setRefreshing(false);setLoading(false);}},[]);
+ useEffect(()=>{void loadHealth();},[loadHealth]);
+ useEffect(()=>{if(health?.capabilities?.authentication)void loadAccount();},[health,loadAccount]);
+ useEffect(()=>{if(health?.capabilities?.sportsData&&health?.capabilities?.database){void loadEvents();const id=window.setInterval(()=>void loadEvents(),refreshMs);return()=>window.clearInterval(id);}else setLoading(false);},[health,loadEvents,refreshMs]);
+ const sports=useMemo(()=>["All sports",...Array.from(new Set(events.map(e=>e.sportTitle))).sort()], [events]);
+ const visible=events.filter(e=>(filter==="All sports"||e.sportTitle===filter));
+ const totalOdds=picks.reduce((v,p)=>v*p.odds,1),stakeCents=Math.round((Number(stake)||0)*100);
+ const available=wallet?.balanceCents||0;
+ function toggle(e:Event,c:Choice){setPicks(old=>old.some(p=>p.selectionId===c.id)?old.filter(p=>p.selectionId!==c.id):[...old.filter(p=>p.fixtureId!==e.id),{selectionId:c.id,name:c.name,odds:Number(c.odds),fixtureId:e.id,fixtureName:e.homeTeam+" vs "+e.awayTeam}]);}
+ async function placeBet(){if(!user){window.location.href="/login";return;}if(!picks.length||stakeCents<100||stakeCents>available){setNotice("Choose an outcome and enter a valid stake within your virtual balance.");return;}setBusy(true);try{const r=await fetch("/api/bets",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({stakeCents,selectionIds:picks.map(p=>p.selectionId)})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Bet placement failed.");setNotice("Virtual bet placed successfully.");setPicks([]);await loadAccount();}catch(e){setNotice(e instanceof Error?e.message:"Bet placement failed.");}finally{setBusy(false);}}
+ async function topUp(){setBusy(true);try{const r=await fetch("/api/wallet",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"claim-demo-credits"})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Top-up failed.");setWallet(d.wallet);setNotice("100 virtual credits added.");}catch(e){setNotice(e instanceof Error?e.message:"Top-up failed.");}finally{setBusy(false);}}
+ async function signOut(){await fetch("/api/auth/sign-out",{method:"POST"});setUser(null);setWallet(null);setBets([]);setMenu(false);}
+ return <div className="sharp-shell min-h-screen bg-[#080d17] text-slate-100">
+  <div className="border-b border-slate-800 bg-[#101a2a] px-4 py-2 text-center text-[10px] font-bold tracking-[.18em] text-lime-300"><ShieldCheck className="mr-2 inline h-3 w-3"/> WELCOME TO THE SHARPBETS ARENA <span className="ml-2 font-normal tracking-normal text-slate-400">Virtual credits only · No deposits or withdrawals</span></div>
+  <header className="sharp-header sticky top-0 z-30 border-b border-slate-800 bg-[#0b1422]/95 backdrop-blur">
+   <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
+    <Link href="/" className="whitespace-nowrap text-[clamp(1.15rem,5vw,1.5rem)] font-black tracking-tight">SHARP<span className="text-lime-300">BETS</span><span className="ml-1 text-[8px] font-semibold tracking-[.18em] text-slate-500 sm:ml-2 sm:text-[9px] sm:tracking-[.25em]">PLAY ARENA</span></Link>
+    <div className="flex items-center gap-2">
+     {user&&wallet?<div className="hidden rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-right sm:block"><div className="text-[9px] uppercase tracking-widest text-slate-500">Virtual balance</div><div className="font-bold text-lime-300">{credits(wallet.balanceCents)} cr</div></div>:null}
+     {user?<div className="relative"><button onClick={()=>setMenu(!menu)} className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm"><CircleUserRound size={16}/><span className="hidden sm:inline">{user.name}</span><ChevronDown size={14}/></button>{menu&&<div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-xl"><Link className="block rounded p-2 text-sm hover:bg-slate-800" href="/wallet">Wallet</Link><Link className="block rounded p-2 text-sm hover:bg-slate-800" href="/my-bets">My Bets</Link><button onClick={signOut} className="flex w-full items-center gap-2 rounded p-2 text-sm hover:bg-slate-800"><LogOut size={14}/> Sign out</button></div>}</div>:<Link href="/login" className="whitespace-nowrap rounded-lg bg-lime-300 px-3 py-2 text-xs font-black text-slate-950 sm:px-4 sm:text-sm">Sign in / Join</Link>}
     </div>
-  );
-}
+   </div>
+   <nav aria-label="Main navigation" className="mx-auto flex max-w-7xl gap-2 overflow-x-auto border-t border-slate-800/80 px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    {[
+     {label:"⌂ Home",color:"lime",page:0},
+     {label:"⚽ Sports",color:"rose",page:1},
+     {label:"● Live action",color:"orange",page:1},
+     {label:"♠ Casino",color:"fuchsia",page:2},
+     {label:"✦ Playbook",color:"cyan",page:3},
+    ].map(item=><button key={item.label} onClick={()=>setActivePage(item.page)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition ${activePage===item.page?"border-white/30 bg-white/15 text-white":"border-slate-700 bg-slate-900/60 text-slate-300 hover:bg-slate-800"}`}>{item.label}</button>)}
+    <Link href="/my-bets" className="shrink-0 rounded-full border border-violet-300/30 bg-violet-400/10 px-4 py-2 text-xs font-bold text-violet-200">▤ My Bets</Link>
+    <Link href="/wallet" className="shrink-0 rounded-full border border-amber-300/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-200">★ Rewards & Wallet</Link>
+    <Link href="/responsible-play" className="shrink-0 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200">♥ Play responsibly</Link>
+    {user?.role==="admin"&&<Link href="/admin" className="shrink-0 rounded-full border border-sky-300/30 bg-sky-400/10 px-4 py-2 text-xs font-bold text-sky-200">⚙ Admin</Link>}
+   </nav>
+  </header>
+  <main className="mx-auto max-w-7xl overflow-hidden px-4 py-8">
+   <div className="mb-4 flex items-center justify-between text-[10px] font-bold tracking-widest text-slate-500"><span>SHARPBETS ARENA</span><span>{["HOME","SPORTS","CASINO","PLAYBOOK"][activePage]} · {activePage+1}/4</span></div>
+   <div className="sharp-panel-viewport relative [perspective:1600px]">
+   <div className="sharp-panel-track flex items-start transition-transform duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none [transform-style:preserve-3d]" style={{transform:`translateX(-${activePage*25}%)`}}>
+    <section aria-label="Home" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(0===activePage?0:0<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
+   <section className="sharp-hero mb-8 grid gap-6 rounded-2xl border border-blue-900/70 bg-[radial-gradient(ellipse_at_85%_0%,rgba(59,130,246,.25),transparent_45%),linear-gradient(110deg,#142a45,#0d192a)] p-6 md:grid-cols-[1.2fr_.8fr] md:p-9">
+    <div><div className="mb-3 text-[10px] font-bold tracking-[.25em] text-lime-300">YOUR SEAT IN THE GAME · ALL SPORTS WELCOME</div><h1 className="max-w-2xl text-3xl font-black leading-tight tracking-tight md:text-5xl">Good games. Big moments.<br/><span className="bg-gradient-to-r from-lime-300 via-cyan-300 to-fuchsia-300 bg-clip-text text-transparent">Your kind of sports arena.</span></h1><p className="mt-4 max-w-xl text-sm leading-6 text-slate-300">Pull up a seat. Catch the fixtures, follow the action, learn the game and build a virtual bet slip just for fun. No real money involved.</p><div className="mt-6 flex flex-wrap gap-3"><button onClick={()=>setActivePage(1)} className="rounded-lg bg-lime-300 px-5 py-3 text-sm font-black text-slate-950">Let’s explore <ChevronRight className="ml-1 inline h-4 w-4"/></button>{!user&&<Link href="/login" className="rounded-lg border border-slate-500 px-5 py-3 text-sm font-bold">Create free account</Link>}</div></div>
+    <div className="grid grid-cols-2 gap-3 self-end"><div className="rounded-xl border border-white/10 bg-black/20 p-4"><Activity className="mb-3 text-lime-300"/><div className="text-2xl font-black">{events.length}</div><div className="text-xs text-slate-400">Games on the board</div></div><div className="rounded-xl border border-white/10 bg-black/20 p-4"><Trophy className="mb-3 text-lime-300"/><div className="text-2xl font-black">{bets.filter(b=>b.status==="open").length}</div><div className="text-xs text-slate-400">Your open slips</div></div></div>
+   </section>
+   {health&&health.missing?.length>0&&<div className="mb-6 rounded-xl border border-amber-700/60 bg-amber-950/40 p-4 text-sm text-amber-100"><b>Platform setup incomplete.</b><p className="mt-1 text-amber-200/80">Complete the remaining integrations below. The sports API key is stored securely; the database connection is still required before accounts, wallets and markets can run. Missing: {(health.missing||[]).join(", ")||"service configuration"}.</p></div>}
+   {notice&&<div role="status" className="mb-5 flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm text-slate-200"><span>{notice}</span><button onClick={()=>setNotice("")}>×</button></div>}
 
-function BetSlip({picks,matches,stake,setStake,balance,combined,potential,remove,placeBet,playDisabled}:{picks:Pick[];matches:Match[];stake:string;setStake:(s:string)=>void;balance:number;combined:number;potential:number;remove:(id:number)=>void;placeBet:()=>void;playDisabled:boolean}) {
-  return <div className="slip-card"><div className="slip-title"><h3>Bet slip <span>{picks.length}</span></h3><span className="virtual-tag">VIRTUAL</span></div>
-    {!picks.length?<div className="slip-empty"><Trophy size={27}/><b>Your slip is empty</b><p>Choose an outcome to add it to your bet slip.</p></div>:<div className="slip-picks">{picks.map(p=>{const m=matches.find(x=>x.id===p.matchId);return <div className="slip-pick" key={p.matchId}><div><b>{m?.home} vs {m?.away}</b><small>{outcomeNames[p.outcome]} · {p.odds.toFixed(2)}</small></div><button onClick={()=>remove(p.matchId)} aria-label="Remove selection"><X size={15}/></button></div>})}</div>}
-    <label className="input-label">Stake (virtual credits)</label><input className="stake-input" type="number" min="1" value={stake} onChange={e=>setStake(e.target.value)} />
-    <div className="quick-stakes">{[5,10,25].map(n=><button key={n} onClick={()=>setStake(String(n))}>{n} cr</button>)}</div>
-    <div className="slip-summary"><span>Combined odds</span><b>{picks.length?combined.toFixed(2):"—"}</b></div><div className="slip-summary payout"><span>Potential payout</span><b>{picks.length?fmt(potential)+" cr":"—"}</b></div><div className="balance-note">Available balance <b>{fmt(balance)} cr</b></div>
-    <button className="place-button" disabled={playDisabled||!picks.length||Number(stake)<=0||Number(stake)>balance} onClick={placeBet}>Place free-play bet</button><p className="slip-disclaimer">No money is deposited, wagered or paid out.</p>
-  </div>;
-}
 
-function Modal({title,close,children}:{title:string;close:()=>void;children:React.ReactNode}) {
-  return <div className="modal-backdrop" onClick={close}><section className="modal-card" onClick={e=>e.stopPropagation()}><div className="modal-head"><h3>{title}</h3><button onClick={close}><X size={18}/></button></div>{children}</section></div>;
+    </section>
+    <section aria-label="Sports" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(1===activePage?0:1<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
+   <div id="events" className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="flex items-center gap-2 text-[10px] font-bold tracking-[.2em] text-fuchsia-300"><Star size={12}/> GAME DAY CENTRAL</div><h2 className="mt-1 text-2xl font-black">Who’s playing?</h2><p className="mt-1 text-xs text-slate-400">Pick a sport, explore the matchups and follow the action · updates every {Math.round(refreshMs/60000)} min</p></div><button onClick={loadEvents} disabled={refreshing} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300"><RefreshCw className={refreshing?"mr-2 inline h-3 w-3 animate-spin":"mr-2 inline h-3 w-3"}/>Refresh</button></div>
+   <div className="mb-5 flex gap-2 overflow-x-auto pb-2">{sports.map(s=><button key={s} onClick={()=>setFilter(s)} className={filter===s?"whitespace-nowrap rounded-full bg-lime-300 px-4 py-2 text-xs font-black text-slate-950":"whitespace-nowrap rounded-full border border-slate-700 px-4 py-2 text-xs text-slate-300"}>{s}</button>)}</div>
+   <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_350px]">
+    <section className="space-y-3">{loading?<div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center text-sm text-slate-400">Loading sports feed…</div>:visible.length?visible.map(e=><article key={e.id} className="sharp-match rounded-xl border border-slate-800 bg-[#101a2a] p-4 shadow-lg">
+     <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400"><span className="font-bold uppercase tracking-wider">{e.sportTitle} · {e.league}</span><span className={e.status==="live"?"font-bold text-rose-400":"text-slate-400"}>{e.status==="live"?"● LIVE":"UPCOMING"} · {time(e.startTime)}</span></div>
+     <div className="my-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3"><div className="font-bold">{e.homeTeam}</div><div className="text-center text-xs text-slate-500">{e.homeScore!==null&&e.awayScore!==null?<b className="text-lg text-white">{e.homeScore} : {e.awayScore}</b>:"VS"}</div><div className="text-right font-bold">{e.awayTeam}</div></div><div className="sharp-score-links -mt-2 mb-3 flex flex-wrap items-center gap-3 text-[10px]"><span className="text-slate-500">External scoreboards</span><a href="https://www.flashscore.com/" target="_blank" rel="noopener noreferrer">Flashscore ↗</a><a href="https://www.sofascore.com/" target="_blank" rel="noopener noreferrer">Sofascore ↗</a></div>
+     <div className="mb-2 text-[9px] font-bold uppercase tracking-widest text-slate-500">Match winner · Best available price</div>
+     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{e.market.selections.map(c=><button key={c.id} onClick={()=>toggle(e,c)} className={picks.some(p=>p.selectionId===c.id)?"sharp-odd rounded-lg border border-lime-300 bg-lime-300/10 p-3 text-left":"sharp-odd rounded-lg border border-slate-700 bg-[#18263a] p-3 text-left hover:border-slate-500"}><span className="block truncate text-[10px] text-slate-400">{c.name}</span><b className="mt-1 block text-base text-white">{Number(c.odds).toFixed(2)}</b></button>)}</div>
+    </article>):<div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center"><Trophy className="mx-auto mb-3 text-slate-600"/><b>No games on the board just yet</b><p className="mt-2 text-xs text-slate-500">{notice||"Try refreshing or check back later."}</p></div>}</section>
+    <aside className="sharp-slip h-fit rounded-xl border border-slate-700 bg-[#101a2a] p-5 lg:sticky lg:top-28"><div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-black">Bet slip <span className="text-sm text-slate-400">({picks.length})</span></h3><span className="rounded bg-lime-300/10 px-2 py-1 text-[9px] font-bold tracking-widest text-lime-300">VIRTUAL</span></div>
+     {!picks.length?<div className="rounded-lg border border-dashed border-slate-700 p-7 text-center text-xs text-slate-500">Tap a team or outcome you fancy. Your picks will show up here.</div>:<div className="mb-4 space-y-2">{picks.map(p=><div key={p.selectionId} className="flex items-start justify-between gap-3 rounded-lg bg-slate-900 p-3"><div><b className="block text-xs">{p.fixtureName}</b><span className="text-[10px] text-slate-400">{p.name} · {p.odds.toFixed(2)}</span></div><button onClick={()=>setPicks(old=>old.filter(x=>x.selectionId!==p.selectionId))} className="text-slate-500">×</button></div>)}</div>}
+     <label className="mb-2 block text-xs text-slate-400">Stake (virtual credits)<input type="number" min="1" max="5000" value={stake} onChange={e=>setStake(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-white"/></label>
+     <div className="my-3 flex gap-2">{[5,10,25,50].map(n=><button key={n} onClick={()=>setStake(String(n))} className="flex-1 rounded border border-slate-700 py-2 text-xs">{n}</button>)}</div>
+     <div className="flex justify-between border-t border-slate-700 py-3 text-xs"><span className="text-slate-400">Combined odds</span><b>{picks.length?totalOdds.toFixed(2):"—"}</b></div><div className="flex justify-between pb-4 text-xs"><span className="text-slate-400">Potential payout</span><b className="text-lime-300">{picks.length?credits(Math.floor(stakeCents*totalOdds))+" cr":"—"}</b></div>
+     <div className="mb-3 flex justify-between text-[10px] text-slate-400"><span>Available balance</span><b>{wallet?credits(available)+" cr":"Sign in to view"}</b></div>
+     <button disabled={busy||!picks.length||!user||stakeCents<100||stakeCents>available} onClick={placeBet} className="w-full rounded-lg bg-lime-300 px-4 py-3 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40">{busy?"Processing…":user?"Place virtual bet":"Sign in to place a bet"}</button>
+     {!user&&<Link href="/login" className="mt-3 block text-center text-xs text-lime-300 underline">Sign in or create an account</Link>}
+     <p className="mt-3 text-center text-[9px] text-slate-500">Virtual credits only. No cash value or withdrawals.</p>
+    </aside>
+   </div>
+
+    </section>
+    <section aria-label="Casino" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(2===activePage?0:2<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
+   <section id="casino" className="mb-9 overflow-hidden rounded-2xl border border-violet-400/20 bg-[radial-gradient(ellipse_at_10%_0%,rgba(236,72,153,.18),transparent_38%),radial-gradient(ellipse_at_90%_100%,rgba(99,102,241,.2),transparent_42%),linear-gradient(120deg,#1b1235,#11172c_55%,#101a2a)] p-5 md:p-7">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><div className="flex items-center gap-2 text-[10px] font-black tracking-[.22em] text-fuchsia-300"><Crown size={15}/> SHARPBETS CASINO LOUNGE</div><h2 className="mt-2 text-2xl font-black md:text-3xl">Change the game. Find your next favourite.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">A colourful games-room preview, made for the fun of the game.</p></div><span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-300/10 px-3 py-2 text-[10px] font-black tracking-wider text-fuchsia-200">CASINO ZONE</span></div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+     <article className="relative overflow-hidden rounded-xl border border-rose-300/20 bg-gradient-to-br from-rose-500/25 via-slate-950/70 to-orange-500/10 p-4"><div className="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-rose-400/20 text-rose-300"><Dices size={25}/></div><div className="text-[9px] font-black tracking-widest text-rose-300">ARCADE CLASSIC</div><h3 className="mt-1 text-lg font-black">Lucky Slots</h3><p className="mt-1 text-xs text-slate-400">Bright reels, big colour, classic arcade energy.</p><span className="mt-4 inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[9px] font-bold text-rose-200">COMING SOON</span></article>
+     <article className="relative overflow-hidden rounded-xl border border-emerald-300/20 bg-gradient-to-br from-emerald-500/25 via-slate-950/70 to-teal-500/10 p-4"><div className="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/20 text-emerald-300"><Spade size={25}/></div><div className="text-[9px] font-black tracking-widest text-emerald-300">TABLE CLASSIC</div><h3 className="mt-1 text-lg font-black">Blackjack</h3><p className="mt-1 text-xs text-slate-400">A timeless card-table favourite.</p><span className="mt-4 inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[9px] font-bold text-emerald-200">COMING SOON</span></article>
+     <article className="relative overflow-hidden rounded-xl border border-amber-300/20 bg-gradient-to-br from-amber-500/25 via-slate-950/70 to-yellow-500/10 p-4"><div className="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300"><CircleUserRound size={25}/></div><div className="text-[9px] font-black tracking-widest text-amber-300">WHEEL GAME</div><h3 className="mt-1 text-lg font-black">Roulette</h3><p className="mt-1 text-xs text-slate-400">The spin, the suspense, the classic wheel.</p><span className="mt-4 inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[9px] font-bold text-amber-200">COMING SOON</span></article>
+     <article className="relative overflow-hidden rounded-xl border border-sky-300/20 bg-gradient-to-br from-sky-500/25 via-slate-950/70 to-indigo-500/10 p-4"><div className="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-sky-400/20 text-sky-300"><Zap size={25}/></div><div className="text-[9px] font-black tracking-widest text-sky-300">QUICK PLAY</div><h3 className="mt-1 text-lg font-black">Instant Games</h3><p className="mt-1 text-xs text-slate-400">Fast rounds and bite-size challenges.</p><span className="mt-4 inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[9px] font-bold text-sky-200">COMING SOON</span></article>
+    </div>
+    <p className="mt-4 text-[10px] leading-5 text-slate-400">These are preview tiles only; casino games are not active yet. SharpBets currently offers virtual-credit sports features only, with no cash deposits or withdrawals.</p>
+   </section>
+
+    </section>
+    <section aria-label="Playbook" className="w-full shrink-0 pr-1 [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.22,.75,.2,1)]" style={{transform:"rotateY("+(3===activePage?0:3<activePage?-9:9)+"deg)",transformOrigin:"50% 50%"}}>
+   <section id="playbook" className="mb-9 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(115deg,rgba(14,165,233,.13),rgba(168,85,247,.13),rgba(234,179,8,.10))] p-5 md:p-7">
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-2 text-[10px] font-black tracking-[.22em] text-cyan-300"><Sparkles size={14}/> THE SHARPBETS PLAYBOOK</div><h2 className="mt-2 text-2xl font-black md:text-3xl">A little game knowledge goes a long way.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">New to the numbers or already know your way around the pitch? We’re all learning something. Start with a quick tip, then enjoy the action.</p></div><span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-400/10 px-3 py-2 text-[10px] font-bold text-fuchsia-200">LEARN · PLAY · ENJOY</span></div>
+    <div className="grid gap-3 md:grid-cols-3">
+     <article className="rounded-xl border border-cyan-300/20 bg-slate-950/50 p-4"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-300"><BookOpen size={20}/></div><div className="text-[10px] font-black tracking-widest text-cyan-300">01 · THE BASICS</div><h3 className="mt-1 font-extrabold">Get to know the odds</h3><p className="mt-2 text-xs leading-5 text-slate-400">Learn what decimal odds mean and how a potential payout is calculated. No complicated talk.</p></article>
+     <article className="rounded-xl border border-amber-300/20 bg-slate-950/50 p-4"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300"><Flame size={20}/></div><div className="text-[10px] font-black tracking-widest text-amber-300">02 · READ THE GAME</div><h3 className="mt-1 font-extrabold">Look beyond the score</h3><p className="mt-2 text-xs leading-5 text-slate-400">Form, injuries, home advantage and momentum all add context. One number never tells the whole story.</p></article>
+     <article className="rounded-xl border border-emerald-300/20 bg-slate-950/50 p-4"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300"><HeartHandshake size={20}/></div><div className="text-[10px] font-black tracking-widest text-emerald-300">03 · KEEP IT FUN</div><h3 className="mt-1 font-extrabold">Play at your own pace</h3><p className="mt-2 text-xs leading-5 text-slate-400">Set your limits, take breaks and remember: this arena uses virtual credits, not cash.</p><Link href="/responsible-play" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-300">Play responsibly <ChevronRight size={13}/></Link></article>
+    </div>
+   </section>
+
+    </section>
+   </div>
+   </div>
+   <div className="mt-7 flex justify-center gap-2">
+    {["Home","Sports","Casino","Playbook"].map((label,index)=><button key={label} aria-label={`Go to ${label}`} onClick={()=>setActivePage(index)} className={activePage===index?"h-2.5 w-8 rounded-full bg-lime-300 transition-all":"h-2.5 w-2.5 rounded-full bg-slate-600 transition-all hover:bg-slate-400"}/>)}
+   </div>
+  </main>
+  <footer className="mt-12 border-t border-slate-800 bg-[#0b1422] px-4 py-8"><div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-4 text-xs text-slate-500"><span>Made for sports fans · SharpBets Play Arena</span><div className="flex gap-4"><Link href="/responsible-play">Responsible play</Link><Link href="/my-bets">My Bets</Link><Link href="/wallet">Wallet</Link></div></div></footer>
+ </div>;
 }
